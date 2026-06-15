@@ -12,6 +12,7 @@ async def search_matches(q: str = Query(..., min_length=1)):
     matches = await football_api.search_matches(q)
     return {
         "ok": True,
+        "api_down": football_api.last_error,
         "matches": [
             {
                 "id": m.id,

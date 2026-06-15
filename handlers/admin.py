@@ -4,11 +4,17 @@ Only usable by users listed in admin_users.
 """
 
 import logging
+import os
 
-from telegram import Update
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, WebAppInfo
 from telegram.ext import CommandHandler, ContextTypes
 
 from services import storage
+
+ADMIN_WEBAPP_URL = os.getenv(
+    "WEBAPP_ADMIN_URL",
+    "https://scalata.ammirabet.com/api/v1/telegram/app/admin",
+)
 
 log = logging.getLogger(__name__)
 
@@ -87,7 +93,14 @@ async def cmd_admin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text(f"✅ Scalata topic={tid} eliminata.")
 
     else:
-        await update.message.reply_text(HELP_TEXT, parse_mode="HTML")
+        keyboard = InlineKeyboardMarkup([[
+            InlineKeyboardButton("⚙️ Pannello Admin", web_app=WebAppInfo(url=ADMIN_WEBAPP_URL)),
+        ]])
+        await update.message.reply_text(
+            "🔧 <b>Admin Panel</b>",
+            parse_mode="HTML",
+            reply_markup=keyboard,
+        )
 
 
 def register(app) -> None:

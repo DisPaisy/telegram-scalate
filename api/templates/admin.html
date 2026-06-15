@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Admin Panel</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+  background: var(--tg-theme-bg-color, #ffffff);
+  color: var(--tg-theme-text-color, #000000);
+  min-height: 100dvh;
+  padding: 0 0 24px;
+}
+
+/* ── Header ───────────────────────────────────────── */
+.header {
+  padding: 16px 18px 12px;
+  background: var(--tg-theme-secondary-bg-color, #f1f1f1);
+  border-bottom: 1px solid rgba(0,0,0,.06);
+  position: sticky; top: 0; z-index: 20;
+}
+.header h1 { font-size: 17px; font-weight: 700; }
+.header p  { font-size: 12px; color: var(--tg-theme-hint-color, #888); margin-top: 2px; }
+
+/* ── Sections ─────────────────────────────────────── */
+.section { padding: 18px 18px 0; }
+
+.section-title {
+  font-size: 11px; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--tg-theme-hint-color, #888);
+  margin-bottom: 10px;
+}
+
+/* ── Card ─────────────────────────────────────────── */
+.card {
+  background: var(--tg-theme-secondary-bg-color, #f7f7f7);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+
+/* ── Form controls ────────────────────────────────── */
+.form-group { margin-bottom: 12px; }
+.form-group:last-child { margin-bottom: 0; }
+
+label {
+  display: block;
+  font-size: 12px; font-weight: 600;
+  color: var(--tg-theme-hint-color, #888);
+  text-transform: uppercase; letter-spacing: .04em;
+  margin-bottom: 5px;
+}
+
+input[type=text],
+input[type=url],
+input[type=password] {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 9px; border: 1.5px solid transparent;
+  background: var(--tg-theme-bg-color, #fff);
+  color: var(--tg-theme-text-color, #000);
+  font-size: 14px; outline: none;
+  transition: border-color .15s;
+}
+input:focus { border-color: var(--tg-theme-button-color, #2481cc); }
+input::placeholder { color: var(--tg-theme-hint-color, #aaa); }
+
+/* Toggle */
+.toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px;
+}
+.toggle-label { font-size: 14px; font-weight: 600; }
+.toggle-hint  { font-size: 12px; color: var(--tg-theme-hint-color, #888); margin-top: 1px; }
+
+.toggle {
+  position: relative; width: 44px; height: 26px; flex-shrink: 0;
+}
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-track {
+  position: absolute; inset: 0;
+  border-radius: 999px; cursor: pointer;
+  background: #ccc;
+  transition: background .2s;
+}
+.toggle input:checked + .toggle-track { background: var(--tg-theme-button-color, #2481cc); }
+.toggle-track::after {
+  content: ''; position: absolute;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: #fff; top: 3px; left: 3px;
+  transition: transform .2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,.25);
+}
+.toggle input:checked + .toggle-track::after { transform: translateX(18px); }
+
+/* ── Buttons ──────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 11px 18px; border-radius: 10px; border: none;
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  transition: opacity .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn:active { opacity: .72; }
+.btn:disabled { opacity: .45; cursor: default; }
+.btn-primary {
+  background: var(--tg-theme-button-color, #2481cc);
+  color: var(--tg-theme-button-text-color, #fff);
+  width: 100%;
+}
+
+.spinner {
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,.35);
+  border-top-color: #fff; border-radius: 50%;
+  animation: spin .55s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Alerts ───────────────────────────────────────── */
+.alert {
+  padding: 10px 13px; border-radius: 9px; font-size: 13px;
+  margin-top: 10px;
+}
+.alert-ok  { background: rgba(34,197,94,.15);  color: #166534; }
+.alert-err { background: rgba(239,68,68,.12);  color: #991b1b; }
+
+/* ── Scalate list ─────────────────────────────────── */
+.scalata-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--tg-theme-bg-color, #f0f0f0);
+}
+.scalata-item:last-child { border-bottom: none; }
+
+.scalata-icon { font-size: 20px; flex-shrink: 0; }
+
+.scalata-info { flex: 1; min-width: 0; }
+.scalata-name { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.scalata-meta { font-size: 12px; color: var(--tg-theme-hint-color, #888); margin-top: 2px; }
+
+.go-btn {
+  padding: 6px 12px; border-radius: 8px; border: none;
+  background: var(--tg-theme-button-color, #2481cc);
+  color: var(--tg-theme-button-text-color, #fff);
+  font-size: 12px; font-weight: 600; cursor: pointer; flex-shrink: 0;
+  text-decoration: none; display: inline-block;
+}
+
+.empty-msg {
+  padding: 14px;
+  text-align: center;
+  color: var(--tg-theme-hint-color, #888);
+  font-size: 13px;
+}
+
+.key-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 999px;
+  font-size: 11px; font-weight: 700;
+  background: rgba(34,197,94,.15); color: #166534;
+  margin-left: 6px;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>⚙️ Admin Panel</h1>
+  <p>ScalataBot — configurazione e monitoraggio</p>
+</div>
+
+<!-- ── A) AI Configuration ─────────────────────────── -->
+<div class="section" style="margin-top:12px">
+  <div class="section-title">Intelligenza Artificiale</div>
+  <div class="card">
+    <div class="toggle-row">
+      <div>
+        <div class="toggle-label">AI abilitata</div>
+        <div class="toggle-hint">Commenti automatici su vittorie/sconfitte</div>
+      </div>
+      <label class="toggle">
+        <input type="checkbox" id="ai-enabled" checked>
+        <span class="toggle-track"></span>
+      </label>
+    </div>
+
+    <div class="form-group">
+      <label>API URL</label>
+      <input type="url" id="ai-url" placeholder="https://ai.hackclub.com/proxy/v1/chat/completions">
+    </div>
+
+    <div class="form-group">
+      <label>Modello</label>
+      <input type="text" id="ai-model" placeholder="qwen/qwen3-32b">
+    </div>
+
+    <div class="form-group">
+      <label>API Key <span id="key-badge" style="display:none" class="key-badge">✓ impostata</span></label>
+      <input type="password" id="ai-key" placeholder="sk-... (lascia vuoto per mantenere la chiave attuale)">
+    </div>
+
+    <button class="btn btn-primary" id="ai-save-btn" onclick="saveAiConfig()">💾 Salva configurazione AI</button>
+    <div id="ai-msg" class="alert" style="display:none"></div>
+  </div>
+</div>
+
+<!-- ── B) Scalate overview ────────────────────────── -->
+<div class="section" style="margin-top:4px">
+  <div class="section-title">Scalate</div>
+  <div class="card" id="scalate-card" style="padding:0;overflow:hidden">
+    <div class="empty-msg" id="scalate-loading">⏳ Caricamento…</div>
+  </div>
+</div>
+
+<script>
+const SECRET = '__BOT_SECRET__';
+
+const HEADERS = {
+  'Content-Type': 'application/json',
+  'X-Bot-Secret': SECRET,
+};
+
+window.addEventListener('DOMContentLoaded', () => {
+  try { Telegram.WebApp.ready(); Telegram.WebApp.expand(); } catch (_) {}
+  loadAiConfig();
+  loadScalate();
+});
+
+// ── AI Config ─────────────────────────────────────────────────────────────────
+
+async function loadAiConfig() {
+  try {
+    const res = await fetch('/api/v1/telegram/admin/ai-config', { headers: HEADERS });
+    const data = await res.json();
+    if (!data.ok) return;
+    const cfg = data.config;
+    document.getElementById('ai-enabled').checked = cfg.enabled !== false;
+    document.getElementById('ai-url').value = cfg.url || '';
+    document.getElementById('ai-model').value = cfg.model || '';
+    if (cfg.key_set) {
+      document.getElementById('key-badge').style.display = '';
+    }
+  } catch (e) {
+    console.error('Failed to load AI config', e);
+  }
+}
+
+async function saveAiConfig() {
+  const btn = document.getElementById('ai-save-btn');
+  const msgEl = document.getElementById('ai-msg');
+  msgEl.style.display = 'none';
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div>';
+
+  const payload = {
+    enabled: document.getElementById('ai-enabled').checked,
+    url: document.getElementById('ai-url').value.trim(),
+    model: document.getElementById('ai-model').value.trim(),
+    key: document.getElementById('ai-key').value,  // empty = keep existing
+  };
+
+  if (!payload.url || !payload.model) {
+    showMsg('ai-msg', 'err', '❌ URL e modello sono obbligatori.');
+    btn.disabled = false; btn.textContent = '💾 Salva configurazione AI';
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/v1/telegram/admin/ai-config', {
+      method: 'POST',
+      headers: HEADERS,
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.detail || `Errore ${res.status}`);
+    showMsg('ai-msg', 'ok', '✅ Configurazione salvata!');
+    document.getElementById('ai-key').value = '';
+    if (payload.key) document.getElementById('key-badge').style.display = '';
+  } catch (e) {
+    showMsg('ai-msg', 'err', '❌ ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '💾 Salva configurazione AI';
+  }
+}
+
+// ── Scalate list ──────────────────────────────────────────────────────────────
+
+async function loadScalate() {
+  const card = document.getElementById('scalate-card');
+  try {
+    const res = await fetch('/api/v1/telegram/admin/scalate', { headers: HEADERS });
+    const data = await res.json();
+    if (!data.ok || !data.scalate.length) {
+      card.innerHTML = '<div class="empty-msg">Nessuna scalata trovata.</div>';
+      return;
+    }
+
+    const icons = { active: '📊', completed: '🏆', failed: '❌' };
+
+    card.innerHTML = data.scalate
+      .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+      .map(s => {
+        const icon = icons[s.status] || '•';
+        const chatId = String(s.group_id).replace('-100', '');
+        const topicUrl = `https://t.me/c/${chatId}/${s.topic_id}`;
+        return `<div class="scalata-item">
+          <span class="scalata-icon">${icon}</span>
+          <div class="scalata-info">
+            <div class="scalata-name">${escHtml(s.name)}</div>
+            <div class="scalata-meta">Step ${s.current_step}/${s.total_steps} · €${s.current_capital.toFixed(2)}</div>
+          </div>
+          <a class="go-btn" href="${topicUrl}" target="_blank">Vai →</a>
+        </div>`;
+      }).join('');
+  } catch (e) {
+    card.innerHTML = '<div class="empty-msg">⚠️ Errore nel caricamento.</div>';
+  }
+}
+
+// ── Utils ──────────────────────────────────────────────────────────────────────
+
+function showMsg(id, type, text) {
+  const el = document.getElementById(id);
+  el.className = `alert alert-${type === 'ok' ? 'ok' : 'err'}`;
+  el.textContent = text;
+  el.style.display = '';
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+</script>
+</body>
+</html>

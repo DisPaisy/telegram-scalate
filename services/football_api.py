@@ -71,14 +71,19 @@ def _parse_match(raw: dict) -> Optional[Match]:
 
 
 class FootballAPI:
+    def __init__(self) -> None:
+        self.last_error: bool = False
+
     async def _get(self, path: str, **params) -> Optional[dict | list]:
         try:
             async with aiohttp.ClientSession(timeout=TIMEOUT) as session:
                 async with session.get(f"{BASE_URL}{path}", params=params) as resp:
                     resp.raise_for_status()
+                    self.last_error = False
                     return await resp.json(content_type=None)
         except Exception as exc:
             log.warning("worldcup26.ir request failed (%s %s): %s", path, params, exc)
+            self.last_error = True
             return None
 
     async def search_matches(self, query: str) -> list[Match]:

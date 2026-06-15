@@ -96,6 +96,29 @@ def remove_admin_user(user_id: int) -> None:
         _write(data)
 
 
+# ── AI config ─────────────────────────────────────────────────────────────────
+
+_AI_CONFIG_DEFAULT: dict = {
+    "url": "https://ai.hackclub.com/proxy/v1/chat/completions",
+    "model": "qwen/qwen3-32b",
+    "key": "",
+    "enabled": True,
+}
+
+
+def get_ai_config() -> dict:
+    with _lock:
+        data = _read()
+        return {**_AI_CONFIG_DEFAULT, **data.get("ai_config", {})}
+
+
+def save_ai_config(config: dict) -> None:
+    with _lock:
+        data = _read()
+        data["ai_config"] = config
+        _write(data)
+
+
 # ── ID generation ─────────────────────────────────────────────────────────────
 
 def new_id() -> str:

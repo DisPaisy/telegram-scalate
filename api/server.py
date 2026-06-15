@@ -2,10 +2,12 @@
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 
 from api.routes import scalata as scalata_routes
 from api.routes import matches as matches_routes
 from api.routes import admin as admin_routes
+from api.routes import app as app_routes
 
 
 def create_app(bot_app=None) -> FastAPI:
@@ -34,6 +36,11 @@ def create_app(bot_app=None) -> FastAPI:
         admin_routes.router,
         prefix="/api/v1/telegram/admin",
         tags=["admin"],
+    )
+    app.include_router(
+        app_routes.router,
+        prefix="/api/v1/telegram/app",
+        tags=["app"],
     )
 
     @app.get("/health")

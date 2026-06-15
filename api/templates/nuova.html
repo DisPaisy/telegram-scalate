@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Nuova Scalata</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+  background: var(--tg-theme-bg-color, #ffffff);
+  color: var(--tg-theme-text-color, #000000);
+  min-height: 100dvh;
+  padding-bottom: 76px;
+}
+
+/* ── Step bar ─────────────────────────────────────── */
+.step-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 18px;
+  background: var(--tg-theme-secondary-bg-color, #f1f1f1);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.step-dot {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+  background: var(--tg-theme-bg-color, #e0e0e0);
+  color: var(--tg-theme-hint-color, #888);
+  border: 2px solid transparent;
+  flex-shrink: 0;
+  transition: background .2s, color .2s, border-color .2s;
+}
+.step-dot.active {
+  background: var(--tg-theme-button-color, #2481cc);
+  color: var(--tg-theme-button-text-color, #fff);
+  border-color: transparent;
+}
+.step-dot.done {
+  background: #22c55e;
+  color: #fff;
+  border-color: transparent;
+}
+
+.step-line {
+  flex: 1;
+  height: 2px;
+  background: var(--tg-theme-hint-color, #ccc);
+  opacity: 0.25;
+}
+
+.step-label {
+  margin-left: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tg-theme-hint-color, #888);
+  white-space: nowrap;
+}
+
+/* ── Panes ────────────────────────────────────────── */
+.pane { display: none; padding: 16px 18px; }
+.pane.active { display: block; }
+
+h2 {
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+/* ── Form controls ────────────────────────────────── */
+.form-group { margin-bottom: 13px; }
+
+label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tg-theme-hint-color, #888);
+  margin-bottom: 5px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+input[type=text],
+input[type=number],
+select {
+  width: 100%;
+  padding: 11px 13px;
+  border-radius: 10px;
+  border: 1.5px solid transparent;
+  background: var(--tg-theme-secondary-bg-color, #f1f1f1);
+  color: var(--tg-theme-text-color, #000);
+  font-size: 15px;
+  outline: none;
+  transition: border-color .15s;
+  -webkit-appearance: none;
+}
+input:focus, select:focus {
+  border-color: var(--tg-theme-button-color, #2481cc);
+}
+input::placeholder { color: var(--tg-theme-hint-color, #aaa); }
+
+select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7'%3E%3Cpath d='M.5.5l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 13px center;
+  padding-right: 34px;
+}
+
+.row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* ── Buttons ──────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 12px 18px;
+  border-radius: 10px; border: none;
+  font-size: 15px; font-weight: 600;
+  cursor: pointer;
+  transition: opacity .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn:active { opacity: .72; }
+.btn:disabled { opacity: .5; cursor: default; }
+
+.btn-primary {
+  background: var(--tg-theme-button-color, #2481cc);
+  color: var(--tg-theme-button-text-color, #fff);
+}
+.btn-secondary {
+  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+  color: var(--tg-theme-text-color, #000);
+}
+.btn-sm { padding: 7px 13px; font-size: 13px; border-radius: 8px; }
+.btn-full { width: 100%; }
+
+/* ── Section header ───────────────────────────────── */
+.section-hd {
+  display: flex; align-items: center; justify-content: space-between;
+  margin: 20px 0 10px;
+}
+.section-hd h3 { font-size: 14px; font-weight: 600; }
+
+/* ── Withdrawal rows ──────────────────────────────── */
+.wd-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  gap: 8px;
+  align-items: end;
+  margin-bottom: 10px;
+}
+.wd-row .form-group { margin-bottom: 0; }
+
+.computed-field {
+  padding: 11px 12px;
+  border-radius: 10px;
+  background: var(--tg-theme-secondary-bg-color, #f1f1f1);
+  color: var(--tg-theme-hint-color, #888);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.rm-btn {
+  width: 38px; height: 38px;
+  border-radius: 50%; border: none;
+  background: rgba(239,68,68,.12);
+  color: #ef4444;
+  font-size: 20px; line-height: 1;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.rm-btn:active { opacity: .7; }
+
+.hint-text {
+  font-size: 12px;
+  color: var(--tg-theme-hint-color, #888);
+  margin-bottom: 8px;
+}
+
+/* ── Step 2: Match search ─────────────────────────── */
+.search-wrap { position: relative; }
+
+.result-list {
+  margin-top: 8px;
+  border-radius: 10px;
+  border: 1.5px solid var(--tg-theme-secondary-bg-color, #e8e8e8);
+  overflow: hidden;
+}
+.match-item {
+  padding: 11px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--tg-theme-secondary-bg-color, #f0f0f0);
+  transition: background .1s;
+}
+.match-item:last-child { border-bottom: none; }
+.match-item:active { background: var(--tg-theme-secondary-bg-color, #f4f4f4); }
+.match-name { font-weight: 600; font-size: 14px; }
+.match-date { font-size: 12px; color: var(--tg-theme-hint-color, #888); margin-top: 2px; }
+
+.search-msg {
+  padding: 12px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--tg-theme-hint-color, #888);
+}
+
+.alert {
+  padding: 11px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+.alert-warn { background: rgba(251,191,36,.18); color: #92400e; }
+.alert-err  { background: rgba(239,68,68,.12); color: #991b1b; }
+.alert-ok   { background: rgba(34,197,94,.15); color: #166534; }
+
+/* Outcome selector */
+.outcome-sel {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px; margin-top: 14px;
+}
+.outcome-btn {
+  padding: 13px 6px; border-radius: 10px;
+  border: 2px solid var(--tg-theme-secondary-bg-color, #ddd);
+  background: var(--tg-theme-secondary-bg-color, #f1f1f1);
+  color: var(--tg-theme-text-color, #000);
+  cursor: pointer; text-align: center;
+  font-size: 12px; font-weight: 600;
+  transition: border-color .15s, background .15s, color .15s;
+}
+.outcome-btn .code { font-size: 20px; display: block; margin-bottom: 3px; }
+.outcome-btn.selected {
+  border-color: var(--tg-theme-button-color, #2481cc);
+  background: var(--tg-theme-button-color, #2481cc);
+  color: var(--tg-theme-button-text-color, #fff);
+}
+
+/* Selected match card */
+.match-card {
+  padding: 12px 14px; border-radius: 10px;
+  background: var(--tg-theme-secondary-bg-color, #f1f1f1);
+  margin-bottom: 4px;
+}
+.match-card .match-name { font-weight: 600; }
+.match-card .badge {
+  display: inline-block; margin-top: 5px;
+  padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 700;
+  background: var(--tg-theme-button-color, #2481cc);
+  color: var(--tg-theme-button-text-color, #fff);
+}
+
+.link-btn {
+  background: none; border: none; padding: 0;
+  font-size: 13px; color: var(--tg-theme-link-color, #2481cc);
+  cursor: pointer; text-decoration: underline; margin-top: 8px;
+}
+
+.skip-btn {
+  width: 100%; margin-top: 14px;
+  padding: 12px; border-radius: 10px;
+  border: 1.5px dashed var(--tg-theme-hint-color, #bbb);
+  background: transparent;
+  color: var(--tg-theme-hint-color, #888);
+  font-size: 14px; cursor: pointer;
+}
+.skip-btn:active { opacity: .7; }
+
+/* ── Step 3: Summary table ────────────────────────── */
+.summary-meta {
+  padding: 13px 14px; border-radius: 10px;
+  background: var(--tg-theme-secondary-bg-color, #f1f1f1);
+  margin-bottom: 14px; font-size: 13px;
+}
+.summary-meta .title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+.summary-meta .row { color: var(--tg-theme-hint-color, #888); }
+.summary-meta .row b { color: var(--tg-theme-text-color, #000); }
+
+.tbl-wrap {
+  overflow-x: auto; margin-bottom: 16px;
+  border-radius: 10px;
+  border: 1.5px solid var(--tg-theme-secondary-bg-color, #e8e8e8);
+}
+table.sim {
+  width: 100%; border-collapse: collapse; font-size: 13px;
+  min-width: 300px;
+}
+table.sim th {
+  padding: 9px 11px;
+  background: var(--tg-theme-secondary-bg-color, #f1f1f1);
+  color: var(--tg-theme-hint-color, #888);
+  text-align: right; font-size: 11px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .04em;
+  white-space: nowrap;
+}
+table.sim th:first-child { text-align: left; }
+table.sim td {
+  padding: 9px 11px;
+  border-top: 1px solid var(--tg-theme-secondary-bg-color, #f0f0f0);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+table.sim td:first-child { text-align: left; font-weight: 600; }
+table.sim tr.wd-row-sim td {
+  background: rgba(251,191,36,.12);
+  color: #92400e; font-size: 12px; text-align: left;
+  border-top: none; padding-top: 4px; padding-bottom: 6px;
+}
+
+/* ── Nav bar ──────────────────────────────────────── */
+.nav-bar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  display: flex; gap: 10px;
+  padding: 11px 16px;
+  padding-bottom: calc(11px + env(safe-area-inset-bottom, 0px));
+  background: var(--tg-theme-bg-color, #fff);
+  border-top: 1px solid var(--tg-theme-secondary-bg-color, #e0e0e0);
+  z-index: 30;
+}
+.nav-bar .btn-primary { flex: 1; }
+
+/* ── Spinner ──────────────────────────────────────── */
+.spinner {
+  width: 18px; height: 18px;
+  border: 2.5px solid rgba(255,255,255,.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .55s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<!-- Step progress bar -->
+<div class="step-bar">
+  <div class="step-dot active" id="dot1">1</div>
+  <div class="step-line"></div>
+  <div class="step-dot" id="dot2">2</div>
+  <div class="step-line"></div>
+  <div class="step-dot" id="dot3">3</div>
+  <span class="step-label" id="step-label">Configurazione</span>
+</div>
+
+<!-- ── STEP 1: Config ─────────────────────────────── -->
+<div id="pane1" class="pane active">
+  <h2>Configurazione Scalata</h2>
+
+  <div class="form-group">
+    <label>Nome Scalata</label>
+    <input type="text" id="f-name" placeholder="es. Scalata WC 2026" autocomplete="off" maxlength="80">
+  </div>
+
+  <div class="row-2">
+    <div class="form-group">
+      <label>Capitale iniziale €</label>
+      <input type="number" id="f-capital" value="30" min="0.01" step="0.01">
+    </div>
+    <div class="form-group">
+      <label>Numero step</label>
+      <input type="number" id="f-steps" value="19" min="1" max="100">
+    </div>
+  </div>
+
+  <div class="form-group">
+    <label>Moltiplicatore</label>
+    <select id="f-mult-sel">
+      <option value="1.20">×1.20</option>
+      <option value="1.25">×1.25</option>
+      <option value="1.30" selected>×1.30</option>
+      <option value="1.40">×1.40</option>
+      <option value="1.50">×1.50</option>
+      <option value="custom">Altro…</option>
+    </select>
+    <input type="number" id="f-mult-custom" placeholder="es. 1.35" min="1.01" step="0.01"
+      style="margin-top:8px;display:none">
+  </div>
+
+  <!-- Withdrawals -->
+  <div class="section-hd">
+    <h3>Ritiri programmati</h3>
+    <button class="btn btn-secondary btn-sm" onclick="addWd()">+ Aggiungi</button>
+  </div>
+  <p class="hint-text">Dopo ogni step indicato, una parte del profitto viene prelevata e il capitale riparte.</p>
+  <div id="wd-list"></div>
+</div>
+
+<!-- ── STEP 2: Prima partita ──────────────────────── -->
+<div id="pane2" class="pane">
+  <h2>Prima Partita <span style="font-weight:400;font-size:14px;color:var(--tg-theme-hint-color,#888)">(opzionale)</span></h2>
+
+  <div id="search-section">
+    <div class="form-group search-wrap">
+      <label>Cerca squadra o partita</label>
+      <input type="text" id="f-search" placeholder="es. Italia, Real Madrid…" autocomplete="off">
+    </div>
+    <div id="search-results"></div>
+    <div id="api-down" class="alert alert-warn" style="display:none">
+      ⚠️ API non disponibile — potrai collegare la partita manualmente dopo.
+    </div>
+  </div>
+
+  <div id="outcome-section" style="display:none">
+    <div class="match-card" id="sel-match-card"></div>
+    <div class="outcome-sel" id="outcome-sel"></div>
+    <button class="link-btn" onclick="clearMatchSel()">↩ Cambia partita</button>
+  </div>
+
+  <button class="skip-btn" id="skip-btn" onclick="skipMatch()">Salta → (senza partita)</button>
+</div>
+
+<!-- ── STEP 3: Riepilogo ──────────────────────────── -->
+<div id="pane3" class="pane">
+  <h2>Riepilogo</h2>
+  <div id="summary"></div>
+  <div id="submit-err" class="alert alert-err" style="display:none"></div>
+</div>
+
+<!-- Nav bar -->
+<div class="nav-bar">
+  <button class="btn btn-secondary" id="btn-back" onclick="prevStep()" style="display:none">← Indietro</button>
+  <button class="btn btn-primary" id="btn-next" onclick="nextStep()">Avanti →</button>
+</div>
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────────
+const S = {
+  step: 1,
+  wds: [],       // [{id, after_step, preleva, restart_capital}]
+  wdSeq: 0,
+  selMatch: null,  // {id, name, home_team, away_team, date}
+  selOutcome: null,
+};
+
+let _searchTimer = null;
+
+// ── Init ──────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  try { Telegram.WebApp.ready(); Telegram.WebApp.expand(); } catch (_) {}
+
+  document.getElementById('f-mult-sel').addEventListener('change', e => {
+    const custom = document.getElementById('f-mult-custom');
+    custom.style.display = e.target.value === 'custom' ? '' : 'none';
+    if (e.target.value === 'custom') custom.focus();
+    recomputeAllWds();
+  });
+
+  document.getElementById('f-mult-custom').addEventListener('input', recomputeAllWds);
+  document.getElementById('f-capital').addEventListener('input', recomputeAllWds);
+  document.getElementById('f-search').addEventListener('input', onSearchInput);
+});
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+function getMultiplier() {
+  const sel = document.getElementById('f-mult-sel').value;
+  if (sel !== 'custom') return parseFloat(sel);
+  return parseFloat(document.getElementById('f-mult-custom').value) || 1.30;
+}
+
+function getCapital() {
+  return parseFloat(document.getElementById('f-capital').value) || 0;
+}
+
+function getSteps() {
+  return parseInt(document.getElementById('f-steps').value) || 0;
+}
+
+function fmt(n) {
+  return '€' + n.toFixed(2);
+}
+
+function fmtDate(d) {
+  if (!d) return '';
+  try {
+    const dt = new Date(d);
+    return dt.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' }) +
+           ' ' + dt.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+  } catch (_) { return d; }
+}
+
+// ── Step navigation ───────────────────────────────────────────────────────
+const LABELS = ['', 'Configurazione', 'Prima Partita', 'Riepilogo'];
+
+function gotoStep(n) {
+  document.getElementById(`pane${S.step}`).classList.remove('active');
+  [1, 2, 3].forEach(i => {
+    const dot = document.getElementById(`dot${i}`);
+    dot.classList.remove('active', 'done');
+    if (i < n) dot.classList.add('done');
+    else if (i === n) dot.classList.add('active');
+  });
+
+  S.step = n;
+  document.getElementById(`pane${n}`).classList.add('active');
+  document.getElementById('step-label').textContent = LABELS[n];
+
+  const btnBack = document.getElementById('btn-back');
+  const btnNext = document.getElementById('btn-next');
+  btnBack.style.display = n === 1 ? 'none' : '';
+
+  if (n === 3) {
+    renderSummary();
+    btnNext.textContent = '✅ Crea Scalata';
+    btnNext.onclick = submitScalata;
+  } else {
+    btnNext.textContent = 'Avanti →';
+    btnNext.onclick = nextStep;
+  }
+
+  window.scrollTo(0, 0);
+}
+
+function nextStep() {
+  if (S.step === 1 && !validateStep1()) return;
+  if (S.step < 3) gotoStep(S.step + 1);
+}
+
+function prevStep() {
+  if (S.step > 1) gotoStep(S.step - 1);
+}
+
+function skipMatch() {
+  S.selMatch = null;
+  S.selOutcome = null;
+  gotoStep(3);
+}
+
+// ── Step 1 validation ─────────────────────────────────────────────────────
+function validateStep1() {
+  if (!document.getElementById('f-name').value.trim()) {
+    alert('Inserisci il nome della scalata.');
+    document.getElementById('f-name').focus();
+    return false;
+  }
+  const cap = getCapital();
+  if (!cap || cap <= 0) {
+    alert('Inserisci un capitale iniziale valido.');
+    return false;
+  }
+  const mult = getMultiplier();
+  if (!mult || mult <= 1) {
+    alert('Il moltiplicatore deve essere maggiore di 1.');
+    return false;
+  }
+  const steps = getSteps();
+  if (!steps || steps < 1) {
+    alert('Inserisci un numero di step valido (min 1).');
+    return false;
+  }
+  return true;
+}
+
+// ── Withdrawals ───────────────────────────────────────────────────────────
+
+// Compute capital after winning `step` given prior withdrawals only.
+function capitalAfterStep(capital, mult, priorWds, step) {
+  // priorWds sorted by after_step, only those with after_step < step
+  const map = {};
+  for (const w of priorWds) map[w.after_step] = w.restart_capital;
+  let cap = capital;
+  for (let s = 1; s <= step; s++) {
+    cap = cap * mult;
+    // apply restart if there's a withdrawal after this step AND step < target
+    if (s < step && map[s] != null) cap = map[s];
+  }
+  return parseFloat(cap.toFixed(2));
+}
+
+function computeRestartCapital(wd) {
+  const cap = getCapital();
+  const mult = getMultiplier();
+  const afterStep = parseInt(wd.after_step) || 0;
+  const preleva = parseFloat(wd.preleva);
+  if (!afterStep || isNaN(preleva)) return null;
+
+  // Only use OTHER withdrawals that come strictly before this step
+  const prior = S.wds
+    .filter(w => w !== wd && w.after_step && parseInt(w.after_step) < afterStep && w.restart_capital != null)
+    .map(w => ({ after_step: parseInt(w.after_step), restart_capital: w.restart_capital }))
+    .sort((a, b) => a.after_step - b.after_step);
+
+  const capAtStep = capitalAfterStep(cap, mult, prior, afterStep);
+  return Math.max(0, parseFloat((capAtStep - preleva).toFixed(2)));
+}
+
+function recomputeAllWds() {
+  for (const wd of S.wds) {
+    wd.restart_capital = computeRestartCapital(wd);
+  }
+  renderWds();
+}
+
+function addWd() {
+  S.wds.push({ id: ++S.wdSeq, after_step: '', preleva: '', restart_capital: null });
+  renderWds();
+}
+
+function removeWd(id) {
+  S.wds = S.wds.filter(w => w.id !== id);
+  recomputeAllWds();
+}
+
+function onWdChange(id, field, val) {
+  const wd = S.wds.find(w => w.id === id);
+  if (!wd) return;
+  wd[field] = val === '' ? '' : (field === 'after_step' ? parseInt(val) || '' : parseFloat(val));
+  wd.restart_capital = computeRestartCapital(wd);
+  // Re-compute all others too (order dependency)
+  for (const w of S.wds) {
+    if (w !== wd) w.restart_capital = computeRestartCapital(w);
+  }
+  renderWds();
+}
+
+function renderWds() {
+  const el = document.getElementById('wd-list');
+  if (S.wds.length === 0) {
+    el.innerHTML = '<p class="hint-text" style="margin-bottom:0">Nessun ritiro aggiunto.</p>';
+    return;
+  }
+  el.innerHTML = S.wds.map(w => `
+    <div class="wd-row">
+      <div class="form-group">
+        <label>Dopo step</label>
+        <input type="number" min="1" value="${w.after_step}"
+          placeholder="N"
+          oninput="onWdChange(${w.id},'after_step',this.value)"
+          onchange="onWdChange(${w.id},'after_step',this.value)">
+      </div>
+      <div class="form-group">
+        <label>Preleva €</label>
+        <input type="number" min="0" step="0.01" value="${w.preleva}"
+          placeholder="0.00"
+          oninput="onWdChange(${w.id},'preleva',this.value)"
+          onchange="onWdChange(${w.id},'preleva',this.value)">
+      </div>
+      <div class="form-group">
+        <label>Riparti con</label>
+        <div class="computed-field">${w.restart_capital != null ? fmt(w.restart_capital) : '—'}</div>
+      </div>
+      <button class="rm-btn" onclick="removeWd(${w.id})" title="Rimuovi">×</button>
+    </div>
+  `).join('');
+}
+
+// ── Match search ──────────────────────────────────────────────────────────
+function onSearchInput(e) {
+  clearTimeout(_searchTimer);
+  const q = e.target.value.trim();
+  const el = document.getElementById('search-results');
+  if (q.length < 2) { el.innerHTML = ''; return; }
+  _searchTimer = setTimeout(() => doSearch(q), 400);
+}
+
+async function doSearch(q) {
+  const el = document.getElementById('search-results');
+  el.innerHTML = '<div class="search-msg">🔍 Ricerca in corso…</div>';
+  try {
+    const res = await fetch(`/api/v1/telegram/matches/search?q=${encodeURIComponent(q)}`);
+    const data = await res.json();
+
+    if (data.api_down) {
+      el.innerHTML = '';
+      document.getElementById('api-down').style.display = '';
+      return;
+    }
+    document.getElementById('api-down').style.display = 'none';
+
+    if (!data.matches.length) {
+      el.innerHTML = '<div class="search-msg">Nessuna partita trovata.</div>';
+      return;
+    }
+
+    el.innerHTML = `<div class="result-list">${data.matches.map(m => `
+      <div class="match-item" onclick='selectMatch(${JSON.stringify(m)})'>
+        <div class="match-name">${escHtml(m.name)}</div>
+        <div class="match-date">${fmtDate(m.date)}</div>
+      </div>`).join('')}</div>`;
+
+  } catch (_) {
+    el.innerHTML = '';
+    document.getElementById('api-down').style.display = '';
+  }
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function selectMatch(m) {
+  S.selMatch = m;
+  S.selOutcome = null;
+
+  document.getElementById('search-section').style.display = 'none';
+  document.getElementById('skip-btn').style.display = 'none';
+  document.getElementById('outcome-section').style.display = '';
+
+  document.getElementById('sel-match-card').innerHTML = `
+    <div class="match-name">${escHtml(m.name)}</div>
+    <div class="match-date" style="margin-top:3px;font-size:12px;color:var(--tg-theme-hint-color,#888)">${fmtDate(m.date)}</div>
+    <div id="badge-outcome"></div>
+  `;
+
+  document.getElementById('outcome-sel').innerHTML = ['1','X','2'].map((code, i) => {
+    const labels = [escHtml(m.home_team), 'Pareggio', escHtml(m.away_team)];
+    return `<button class="outcome-btn" id="ob-${code}" onclick="selectOutcome('${code}')">
+      <span class="code">${code}</span>${labels[i]}
+    </button>`;
+  }).join('');
+}
+
+function selectOutcome(code) {
+  S.selOutcome = code;
+  document.querySelectorAll('.outcome-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById(`ob-${code}`).classList.add('selected');
+  const labels = { '1': S.selMatch.home_team, 'X': 'Pareggio', '2': S.selMatch.away_team };
+  document.getElementById('badge-outcome').innerHTML =
+    `<span class="badge">Puntata: ${code} – ${escHtml(labels[code])}</span>`;
+}
+
+function clearMatchSel() {
+  S.selMatch = null; S.selOutcome = null;
+  document.getElementById('outcome-section').style.display = 'none';
+  document.getElementById('search-section').style.display = '';
+  document.getElementById('skip-btn').style.display = '';
+  document.getElementById('f-search').value = '';
+  document.getElementById('search-results').innerHTML = '';
+}
+
+// ── Summary simulation ────────────────────────────────────────────────────
+function simulate(capital, mult, totalSteps, wds) {
+  const map = {};
+  for (const w of wds) {
+    const s = parseInt(w.after_step);
+    if (s && w.restart_capital != null) map[s] = w;
+  }
+  let cap = capital;
+  const rows = [];
+  for (let s = 1; s <= totalSteps; s++) {
+    const bet = parseFloat((cap * (1 - 1 / mult)).toFixed(2));
+    const capAfter = parseFloat((cap * mult).toFixed(2));
+    rows.push({ step: s, capBefore: cap, bet, capAfter, wd: map[s] || null });
+    cap = map[s] ? map[s].restart_capital : capAfter;
+  }
+  return rows;
+}
+
+function renderSummary() {
+  const name = document.getElementById('f-name').value.trim();
+  const capital = getCapital();
+  const mult = getMultiplier();
+  const steps = getSteps();
+  const rows = simulate(capital, mult, steps, S.wds);
+
+  let matchHtml = '';
+  if (S.selMatch && S.selOutcome) {
+    const lbl = { '1': S.selMatch.home_team, 'X': 'Pareggio', '2': S.selMatch.away_team }[S.selOutcome];
+    matchHtml = `<div class="row" style="margin-top:6px">⚽ ${escHtml(S.selMatch.name)} — Puntata: <b>${S.selOutcome} (${escHtml(lbl)})</b></div>`;
+  } else {
+    matchHtml = `<div class="row" style="margin-top:6px;color:var(--tg-theme-hint-color,#888)">Nessuna partita collegata</div>`;
+  }
+
+  const tableRows = rows.map(r => {
+    let html = `<tr>
+      <td>${r.step}</td>
+      <td>${fmt(r.capBefore)}</td>
+      <td>${fmt(r.bet)}</td>
+      <td>${fmt(r.capAfter)}</td>
+    </tr>`;
+    if (r.wd) {
+      html += `<tr class="wd-row-sim"><td colspan="4">
+        💰 Ritiro: preleva ${fmt(r.wd.preleva)} → riparti con ${fmt(r.wd.restart_capital)}
+      </td></tr>`;
+    }
+    return html;
+  }).join('');
+
+  document.getElementById('summary').innerHTML = `
+    <div class="summary-meta">
+      <div class="title">${escHtml(name)}</div>
+      <div class="row">Capitale: <b>${fmt(capital)}</b> · Moltiplicatore: <b>×${mult}</b> · Step: <b>${steps}</b></div>
+      ${matchHtml}
+    </div>
+    <div class="tbl-wrap">
+      <table class="sim">
+        <thead><tr>
+          <th>#</th><th style="text-align:right">Cap. Prima</th>
+          <th style="text-align:right">Puntata</th><th style="text-align:right">Cap. Dopo</th>
+        </tr></thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+    </div>`;
+}
+
+// ── Submit ────────────────────────────────────────────────────────────────
+async function submitScalata() {
+  const btn = document.getElementById('btn-next');
+  const errEl = document.getElementById('submit-err');
+  errEl.style.display = 'none';
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div>';
+
+  let initData = '';
+  try { initData = Telegram.WebApp.initData || ''; } catch (_) {}
+
+  const payload = {
+    init_data: initData,
+    name: document.getElementById('f-name').value.trim(),
+    starting_capital: getCapital(),
+    multiplier: getMultiplier(),
+    total_steps: getSteps(),
+    withdrawals: S.wds
+      .filter(w => w.after_step && w.preleva !== '' && w.restart_capital != null)
+      .map(w => ({
+        after_step: parseInt(w.after_step),
+        amount: parseFloat(w.preleva),
+        restart_capital: w.restart_capital,
+      })),
+    first_match: (S.selMatch && S.selOutcome) ? {
+      id: S.selMatch.id,
+      name: S.selMatch.name,
+      date: S.selMatch.date || null,
+      outcome_bet: S.selOutcome,
+    } : null,
+  };
+
+  try {
+    const res = await fetch('/api/v1/telegram/scalata/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+
+    if (!res.ok || !data.ok) {
+      throw new Error(data.detail || `Errore ${res.status}`);
+    }
+
+    // Success — close the Mini App
+    try { Telegram.WebApp.close(); } catch (_) {}
+
+    // Fallback: show success in-page
+    document.getElementById('pane3').innerHTML = `
+      <div class="alert alert-ok" style="margin-top:8px">
+        ✅ Scalata creata!
+        ${data.topic_url ? `<br><a href="${data.topic_url}" style="color:inherit;font-weight:600">Apri il topic →</a>` : ''}
+      </div>`;
+    document.querySelector('.nav-bar').style.display = 'none';
+
+  } catch (err) {
+    errEl.textContent = '❌ ' + err.message;
+    errEl.style.display = '';
+    btn.disabled = false;
+    btn.textContent = '✅ Crea Scalata';
+    btn.onclick = submitScalata;
+  }
+}
+</script>
+</body>
+</html>

@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
-WEBAPP_URL = os.getenv("WEBAPP_URL", "https://scalata.ammirabet.com/telegram/nuova")
+WEBAPP_URL = os.getenv("WEBAPP_URL", "https://scalata.ammirabet.com/api/v1/telegram/app/nuova")
 
 
 # ── helpers ───────────────────────────────────────────────────────────────────
