@@ -9,8 +9,8 @@ import os
 from typing import Optional, TYPE_CHECKING
 
 from telegram import (
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
+    KeyboardButton,
+    ReplyKeyboardMarkup,
     Update,
     WebAppInfo,
 )
@@ -80,12 +80,11 @@ async def _rename_topic(bot, scalata: dict, name: str) -> None:
 # ── /nuova ────────────────────────────────────────────────────────────────────
 
 async def cmd_nuova(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    keyboard = InlineKeyboardMarkup([[
-        InlineKeyboardButton(
-            "📊 Crea Scalata",
-            web_app=WebAppInfo(url=WEBAPP_URL),
-        )
-    ]])
+    keyboard = ReplyKeyboardMarkup(
+        [[KeyboardButton("📊 Crea Scalata", web_app=WebAppInfo(url=WEBAPP_URL))]],
+        resize_keyboard=True,
+        one_time_keyboard=True,
+    )
     await update.message.reply_text(
         "Apri il pannello per configurare una nuova scalata:",
         reply_markup=keyboard,

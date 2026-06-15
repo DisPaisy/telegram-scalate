@@ -6,7 +6,7 @@ Only usable by users listed in admin_users.
 import logging
 import os
 
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update, WebAppInfo
+from telegram import KeyboardButton, ReplyKeyboardMarkup, Update, WebAppInfo
 from telegram.ext import CommandHandler, ContextTypes
 
 from services import storage
@@ -93,9 +93,11 @@ async def cmd_admin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         await update.message.reply_text(f"✅ Scalata topic={tid} eliminata.")
 
     else:
-        keyboard = InlineKeyboardMarkup([[
-            InlineKeyboardButton("⚙️ Pannello Admin", web_app=WebAppInfo(url=ADMIN_WEBAPP_URL)),
-        ]])
+        keyboard = ReplyKeyboardMarkup(
+            [[KeyboardButton("⚙️ Pannello Admin", web_app=WebAppInfo(url=ADMIN_WEBAPP_URL))]],
+            resize_keyboard=True,
+            one_time_keyboard=True,
+        )
         await update.message.reply_text(
             "🔧 <b>Admin Panel</b>",
             parse_mode="HTML",
