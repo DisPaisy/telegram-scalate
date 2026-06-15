@@ -7,6 +7,7 @@ import logging
 import os
 
 from telegram import KeyboardButton, ReplyKeyboardMarkup, Update, WebAppInfo
+from telegram.error import BadRequest, Forbidden
 from telegram.ext import CommandHandler, ContextTypes
 
 from services import storage
@@ -98,11 +99,28 @@ async def cmd_admin(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
             resize_keyboard=True,
             one_time_keyboard=True,
         )
-        await update.message.reply_text(
-            "🔧 <b>Admin Panel</b>",
-            parse_mode="HTML",
-            reply_markup=keyboard,
-        )
+        chat = update.effective_chat
+        if chat.type in ("group", "supergroup"):
+            try:
+                await context.bot.send_message(
+                    chat_id=update.effective_user.id,
+                    text="🔧 <b>Admin Panel</b>",
+                    parse_mode="HTML",
+                    reply_markup=keyboard,
+                )
+                await update.message.reply_text("👆 Ti ho inviato il pannello admin in privato!")
+            except (Forbidden, BadRequest):
+                username = context.bot.username
+                await update.message.reply_text(
+                    f"❌ Non riesco a scriverti in privato. "
+                    f"Avvia prima il bot: t.me/{username}?start=setup"
+                )
+        else:
+            await update.message.reply_text(
+                "🔧 <b>Admin Panel</b>",
+                parse_mode="HTML",
+                reply_markup=keyboard,
+            )
 
 
 def register(app) -> None:

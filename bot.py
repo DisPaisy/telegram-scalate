@@ -6,7 +6,8 @@ import os
 
 import uvicorn
 from dotenv import load_dotenv
-from telegram.ext import Application
+from telegram import Update
+from telegram.ext import Application, ChatMemberHandler, ContextTypes
 
 load_dotenv()
 
@@ -32,6 +33,19 @@ def _seed_admin_users() -> None:
             storage.add_admin_user(int(part))
 
 
+async def _on_my_chat_member(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Track groups the bot is added to or removed from."""
+    member = update.my_chat_member
+    if not member:
+        return
+    chat = update.effective_chat
+    if chat.type not in ("group", "supergroup"):
+        return
+    from services import storage
+    if member.new_chat_member.status in ("member", "administrator"):
+        storage.save_group(chat.id, chat.title or str(chat.id))
+
+
 def _build_application() -> Application:
     from handlers import scalata as scalata_handlers
     from handlers import media as media_handlers
@@ -41,6 +55,7 @@ def _build_application() -> Application:
     scalata_handlers.register(app)
     media_handlers.register(app)
     admin_handlers.register(app)
+    app.add_handler(ChatMemberHandler(_on_my_chat_member, ChatMemberHandler.MY_CHAT_MEMBER))
     return app
 
 

@@ -15,6 +15,7 @@ from telegram import (
     WebAppInfo,
 )
 from telegram.constants import ParseMode
+from telegram.error import BadRequest, Forbidden
 from telegram.ext import CommandHandler, ContextTypes
 
 from services import storage
@@ -80,15 +81,58 @@ async def _rename_topic(bot, scalata: dict, name: str) -> None:
 # ── /nuova ────────────────────────────────────────────────────────────────────
 
 async def cmd_nuova(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    keyboard = ReplyKeyboardMarkup(
-        [[KeyboardButton("📊 Crea Scalata", web_app=WebAppInfo(url=WEBAPP_URL))]],
-        resize_keyboard=True,
-        one_time_keyboard=True,
-    )
-    await update.message.reply_text(
-        "Apri il pannello per configurare una nuova scalata:",
-        reply_markup=keyboard,
-    )
+    chat = update.effective_chat
+    user = update.effective_user
+
+    if chat.type in ("group", "supergroup"):
+        # Build URL with group context so the Mini App knows where to create the scalata
+        group_id = chat.id
+        thread_id = update.message.message_thread_id
+        url = f"{WEBAPP_URL}?group_id={group_id}"
+        if thread_id:
+            url += f"&thread_id={thread_id}"
+
+        keyboard = ReplyKeyboardMarkup(
+            [[KeyboardButton("📊 Crea Scalata", web_app=WebAppInfo(url=url))]],
+            resize_keyboard=True,
+            one_time_keyboard=True,
+        )
+        try:
+            await context.bot.send_message(
+                chat_id=user.id,
+                text=f"Crea una nuova scalata nel gruppo <b>{chat.title}</b>:",
+                parse_mode=ParseMode.HTML,
+                reply_markup=keyboard,
+            )
+            await update.message.reply_text("👆 Ti ho inviato un messaggio in privato per creare la scalata!")
+        except (Forbidden, BadRequest):
+            username = context.bot.username
+            await update.message.reply_text(
+                f"❌ Non riesco a scriverti in privato. "
+                f"Avvia prima il bot: t.me/{username}?start=setup"
+            )
+
+    else:
+        # DM: let the user pick which group to use
+        groups = storage.get_groups()
+        if not groups:
+            await update.message.reply_text(
+                "Aggiungimi prima a un gruppo e usa /nuova lì."
+            )
+            return
+
+        buttons = [
+            [KeyboardButton(
+                f"📊 {g['name']}",
+                web_app=WebAppInfo(url=f"{WEBAPP_URL}?group_id={g['id']}"),
+            )]
+            for g in groups.values()
+        ]
+        keyboard = ReplyKeyboardMarkup(buttons, resize_keyboard=True, one_time_keyboard=True)
+        await update.message.reply_text(
+            "Scegli il gruppo in cui creare la scalata:",
+            reply_markup=keyboard,
+        )
 
 
 # ── shared win / loss logic (also called by scheduler) ───────────────────────

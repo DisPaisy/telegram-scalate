@@ -96,6 +96,20 @@ def remove_admin_user(user_id: int) -> None:
         _write(data)
 
 
+# ── Known groups ──────────────────────────────────────────────────────────────
+
+def get_groups() -> dict[str, dict]:
+    with _lock:
+        return _read().get("groups", {})
+
+
+def save_group(group_id: int, name: str) -> None:
+    with _lock:
+        data = _read()
+        data.setdefault("groups", {})[str(group_id)] = {"id": group_id, "name": name}
+        _write(data)
+
+
 # ── AI config ─────────────────────────────────────────────────────────────────
 
 _AI_CONFIG_DEFAULT: dict = {
