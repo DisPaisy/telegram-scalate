@@ -810,8 +810,13 @@ async function submitScalata() {
   let initData = '';
   try { initData = Telegram.WebApp.initData || ''; } catch (_) {}
 
+  // group_id passed as URL param by the bot (needed when Mini App opens via DM)
+  const urlParams = new URLSearchParams(window.location.search);
+  const groupId = urlParams.get('group_id') ? parseInt(urlParams.get('group_id')) : null;
+
   const payload = {
     init_data: initData,
+    group_id: groupId,
     name: document.getElementById('f-name').value.trim(),
     starting_capital: getCapital(),
     multiplier: getMultiplier(),
