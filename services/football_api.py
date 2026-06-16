@@ -1,21 +1,20 @@
-"""football-data.org API client with silent fallback."""
+"""football-data.org v4 API client with silent fallback."""
 
 import logging
 import os
 from dataclasses import dataclass
 from typing import Optional
-from datetime import datetime, timezone
 
 import aiohttp
 
 log = logging.getLogger(__name__)
 
-BASE_URL = os.getenv("FOOTBALL_API_URL", "https://api.football-data.org/v4")
+BASE_URL = "https://api.football-data.org/v4"
 TOKEN = os.getenv("FOOTBALL_API_TOKEN", "")
 TIMEOUT = aiohttp.ClientTimeout(total=5)
 
 _FINISHED_STATUSES = {"FINISHED"}
-_LIVE_STATUSES = {"LIVE", "IN_PLAY", "PAUSED", "1H", "2H", "HT", "ET", "P"}
+_LIVE_STATUSES = {"LIVE", "IN_PLAY", "PAUSED"}
 
 
 @dataclass
@@ -32,18 +31,22 @@ class Match:
 
 def _parse_match(raw: dict) -> Optional[Match]:
     try:
-        home_name = raw["homeTeam"]["name"]
-        away_name = raw["awayTeam"]["name"]
+        home = raw.get("homeTeam") or {}
+        away = raw.get("awayTeam") or {}
+        home_name = home.get("name") or ""
+        away_name = away.get("name") or ""
+        if not home_name and not away_name:
+            return None
+
         status = raw.get("status", "NS")
         date_val = raw.get("utcDate")
 
-        score = raw.get("score", {})
-        ft = score.get("fullTime", {})
+        ft = (raw.get("score") or {}).get("fullTime") or {}
         home_score = ft.get("home")
         away_score = ft.get("away")
 
         return Match(
-            id=str(raw.get("id", "")),
+            id=str(raw["id"]),
             name=f"{home_name} vs {away_name}",
             home_team=home_name,
             away_team=away_name,
@@ -63,7 +66,7 @@ class FootballAPI:
 
     async def _get(self, path: str, **params) -> Optional[dict | list]:
         try:
-            headers = {"X-Auth-Token": TOKEN} if TOKEN else {}
+            headers = {"X-Auth-Token": TOKEN}
             async with aiohttp.ClientSession(timeout=TIMEOUT) as session:
                 async with session.get(f"{BASE_URL}{path}", params=params, headers=headers) as resp:
                     resp.raise_for_status()
@@ -75,21 +78,23 @@ class FootballAPI:
             return None
 
     async def search_matches(self, query: str) -> list[Match]:
-        """Search matches by team name substring in the World Cup."""
-        raw = await self._get(
-            "/competitions/WC/matches",
-            status="SCHEDULED,LIVE,IN_PLAY,PAUSED",
-        )
+        raw = await self._get("/competitions/WC/matches")
         if raw is None:
             return []
-
         items = raw.get("matches", [])
         q = query.lower()
-        results: list[Match] = []
+        results = []
         for item in items:
-            m = _parse_match(item)
-            if m and (q in m.home_team.lower() or q in m.away_team.lower()):
-                results.append(m)
+            if item.get("status") == "FINISHED":
+                continue
+            home = (item.get("homeTeam") or {}).get("name") or ""
+            away = (item.get("awayTeam") or {}).get("name") or ""
+            if not home and not away:
+                continue
+            if q in home.lower() or q in away.lower():
+                m = _parse_match(item)
+                if m:
+                    results.append(m)
         return results[:10]
 
     async def get_match(self, match_id: str) -> Optional[Match]:
@@ -100,9 +105,7 @@ class FootballAPI:
         return _parse_match(item)
 
     async def get_result(self, match_id: str) -> Optional[str]:
-        """
-        Returns "1" (home win), "X" (draw), "2" (away win), or None (not finished).
-        """
+        """Returns '1', 'X', or '2' when the match is FINISHED, else None."""
         match = await self.get_match(match_id)
         if match is None:
             return None
