@@ -21,6 +21,8 @@ async def search_matches(q: str = Query(..., min_length=1)):
                 "away_team": m.away_team,
                 "date": m.date,
                 "status": m.status,
+                "home_score": m.home_score,
+                "away_score": m.away_score,
             }
             for m in matches
         ],

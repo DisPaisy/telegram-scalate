@@ -7,351 +7,231 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 15px;
-  line-height: 1.45;
-  background: var(--tg-theme-bg-color, #ffffff);
-  color: var(--tg-theme-text-color, #000000);
-  min-height: 100dvh;
-  padding-bottom: 76px;
+  font-size: 15px; line-height: 1.45;
+  background: var(--tg-theme-bg-color, #fff);
+  color: var(--tg-theme-text-color, #000);
+  min-height: 100dvh; padding-bottom: 76px;
 }
+.pane { display: none; padding: 16px 18px; }
+.pane.active { display: block; }
+h2 { font-size: 17px; font-weight: 700; margin-bottom: 14px; }
+h3 { font-size: 14px; font-weight: 600; margin: 16px 0 8px; }
 
-/* ── Step bar ─────────────────────────────────────── */
+/* Step bar */
 .step-bar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 12px 18px;
+  display: flex; align-items: center; gap: 6px; padding: 10px 18px;
   background: var(--tg-theme-secondary-bg-color, #f1f1f1);
-  position: sticky;
-  top: 0;
-  z-index: 20;
+  position: sticky; top: 0; z-index: 20;
 }
-
 .step-dot {
-  width: 26px; height: 26px;
-  border-radius: 50%;
+  width: 26px; height: 26px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 700;
+  font-size: 12px; font-weight: 700; flex-shrink: 0;
   background: var(--tg-theme-bg-color, #e0e0e0);
   color: var(--tg-theme-hint-color, #888);
   border: 2px solid transparent;
-  flex-shrink: 0;
-  transition: background .2s, color .2s, border-color .2s;
 }
-.step-dot.active {
-  background: var(--tg-theme-button-color, #2481cc);
-  color: var(--tg-theme-button-text-color, #fff);
-  border-color: transparent;
-}
-.step-dot.done {
-  background: #22c55e;
-  color: #fff;
-  border-color: transparent;
-}
+.step-dot.active { background: var(--tg-theme-button-color, #2481cc); color: var(--tg-theme-button-text-color, #fff); }
+.step-dot.done { background: #22c55e; color: #fff; }
+.step-line { flex: 1; height: 2px; background: var(--tg-theme-hint-color, #ccc); opacity: .25; }
+.step-label { margin-left: 4px; font-size: 12px; font-weight: 600; color: var(--tg-theme-hint-color,#888); }
 
-.step-line {
-  flex: 1;
-  height: 2px;
-  background: var(--tg-theme-hint-color, #ccc);
-  opacity: 0.25;
-}
-
-.step-label {
-  margin-left: 4px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--tg-theme-hint-color, #888);
-  white-space: nowrap;
-}
-
-/* ── Panes ────────────────────────────────────────── */
-.pane { display: none; padding: 16px 18px; }
-.pane.active { display: block; }
-
-h2 {
-  font-size: 17px;
-  font-weight: 700;
-  margin-bottom: 16px;
-}
-
-/* ── Form controls ────────────────────────────────── */
+/* Form controls */
 .form-group { margin-bottom: 13px; }
-
 label {
-  display: block;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--tg-theme-hint-color, #888);
-  margin-bottom: 5px;
-  text-transform: uppercase;
-  letter-spacing: .04em;
+  display: block; font-size: 12px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--tg-theme-hint-color,#888); margin-bottom: 5px;
 }
-
-input[type=text],
-input[type=number],
-select {
-  width: 100%;
-  padding: 11px 13px;
-  border-radius: 10px;
+input[type=text], input[type=number], select {
+  width: 100%; padding: 11px 13px; border-radius: 10px;
   border: 1.5px solid transparent;
   background: var(--tg-theme-secondary-bg-color, #f1f1f1);
-  color: var(--tg-theme-text-color, #000);
-  font-size: 15px;
-  outline: none;
-  transition: border-color .15s;
-  -webkit-appearance: none;
+  color: var(--tg-theme-text-color, #000); font-size: 15px; outline: none;
 }
-input:focus, select:focus {
-  border-color: var(--tg-theme-button-color, #2481cc);
-}
-input::placeholder { color: var(--tg-theme-hint-color, #aaa); }
-
+input:focus, select:focus { border-color: var(--tg-theme-button-color, #2481cc); }
+input::placeholder { color: var(--tg-theme-hint-color,#aaa); }
+input.manual { border-color: var(--tg-theme-button-color, #2481cc); }
 select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7'%3E%3Cpath d='M.5.5l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 13px center;
-  padding-right: 34px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7'%3E%3Cpath d='M.5.5l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 13px center; padding-right: 34px;
+  appearance: none;
 }
-
 .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.hint-text { font-size: 12px; color: var(--tg-theme-hint-color,#888); margin-bottom: 8px; }
 
-/* ── Buttons ──────────────────────────────────────── */
+/* Buttons */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  padding: 12px 18px;
-  border-radius: 10px; border: none;
-  font-size: 15px; font-weight: 600;
-  cursor: pointer;
-  transition: opacity .15s;
-  -webkit-tap-highlight-color: transparent;
+  padding: 12px 18px; border-radius: 10px; border: none;
+  font-size: 15px; font-weight: 600; cursor: pointer;
 }
 .btn:active { opacity: .72; }
 .btn:disabled { opacity: .5; cursor: default; }
-
-.btn-primary {
-  background: var(--tg-theme-button-color, #2481cc);
-  color: var(--tg-theme-button-text-color, #fff);
-}
-.btn-secondary {
-  background: var(--tg-theme-secondary-bg-color, #f0f0f0);
-  color: var(--tg-theme-text-color, #000);
-}
+.btn-primary { background: var(--tg-theme-button-color, #2481cc); color: var(--tg-theme-button-text-color, #fff); }
+.btn-secondary { background: var(--tg-theme-secondary-bg-color, #f0f0f0); color: var(--tg-theme-text-color,#000); }
 .btn-sm { padding: 7px 13px; font-size: 13px; border-radius: 8px; }
 .btn-full { width: 100%; }
-
-/* ── Section header ───────────────────────────────── */
-.section-hd {
-  display: flex; align-items: center; justify-content: space-between;
-  margin: 20px 0 10px;
-}
-.section-hd h3 { font-size: 14px; font-weight: 600; }
-
-/* ── Withdrawal rows ──────────────────────────────── */
-.wd-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr auto;
-  gap: 8px;
-  align-items: end;
-  margin-bottom: 10px;
-}
-.wd-row .form-group { margin-bottom: 0; }
-
-.computed-field {
-  padding: 11px 12px;
-  border-radius: 10px;
-  background: var(--tg-theme-secondary-bg-color, #f1f1f1);
-  color: var(--tg-theme-hint-color, #888);
-  font-size: 14px;
-  font-variant-numeric: tabular-nums;
-}
-
-.rm-btn {
-  width: 38px; height: 38px;
-  border-radius: 50%; border: none;
-  background: rgba(239,68,68,.12);
-  color: #ef4444;
-  font-size: 20px; line-height: 1;
-  cursor: pointer; display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-}
-.rm-btn:active { opacity: .7; }
-
-.hint-text {
-  font-size: 12px;
-  color: var(--tg-theme-hint-color, #888);
-  margin-bottom: 8px;
-}
-
-/* ── Step 2: Match search ─────────────────────────── */
-.search-wrap { position: relative; }
-
-.result-list {
-  margin-top: 8px;
-  border-radius: 10px;
-  border: 1.5px solid var(--tg-theme-secondary-bg-color, #e8e8e8);
-  overflow: hidden;
-}
-.match-item {
-  padding: 11px 14px;
-  cursor: pointer;
-  border-bottom: 1px solid var(--tg-theme-secondary-bg-color, #f0f0f0);
-  transition: background .1s;
-}
-.match-item:last-child { border-bottom: none; }
-.match-item:active { background: var(--tg-theme-secondary-bg-color, #f4f4f4); }
-.match-name { font-weight: 600; font-size: 14px; }
-.match-date { font-size: 12px; color: var(--tg-theme-hint-color, #888); margin-top: 2px; }
-
-.search-msg {
-  padding: 12px;
-  text-align: center;
-  font-size: 13px;
-  color: var(--tg-theme-hint-color, #888);
-}
-
-.alert {
-  padding: 11px 14px;
-  border-radius: 10px;
-  font-size: 13px;
-  margin-bottom: 12px;
-}
-.alert-warn { background: rgba(251,191,36,.18); color: #92400e; }
-.alert-err  { background: rgba(239,68,68,.12); color: #991b1b; }
-.alert-ok   { background: rgba(34,197,94,.15); color: #166534; }
-
-/* Outcome selector */
-.outcome-sel {
-  display: grid; grid-template-columns: 1fr 1fr 1fr;
-  gap: 8px; margin-top: 14px;
-}
-.outcome-btn {
-  padding: 13px 6px; border-radius: 10px;
-  border: 2px solid var(--tg-theme-secondary-bg-color, #ddd);
-  background: var(--tg-theme-secondary-bg-color, #f1f1f1);
-  color: var(--tg-theme-text-color, #000);
-  cursor: pointer; text-align: center;
-  font-size: 12px; font-weight: 600;
-  transition: border-color .15s, background .15s, color .15s;
-}
-.outcome-btn .code { font-size: 20px; display: block; margin-bottom: 3px; }
-.outcome-btn.selected {
-  border-color: var(--tg-theme-button-color, #2481cc);
-  background: var(--tg-theme-button-color, #2481cc);
-  color: var(--tg-theme-button-text-color, #fff);
-}
-
-/* Selected match card */
-.match-card {
-  padding: 12px 14px; border-radius: 10px;
-  background: var(--tg-theme-secondary-bg-color, #f1f1f1);
-  margin-bottom: 4px;
-}
-.match-card .match-name { font-weight: 600; }
-.match-card .badge {
-  display: inline-block; margin-top: 5px;
-  padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 700;
-  background: var(--tg-theme-button-color, #2481cc);
-  color: var(--tg-theme-button-text-color, #fff);
-}
-
 .link-btn {
-  background: none; border: none; padding: 0;
-  font-size: 13px; color: var(--tg-theme-link-color, #2481cc);
-  cursor: pointer; text-decoration: underline; margin-top: 8px;
+  background: none; border: none; padding: 0; font-size: 13px;
+  color: var(--tg-theme-link-color,#2481cc); cursor: pointer; text-decoration: underline;
 }
-
 .skip-btn {
-  width: 100%; margin-top: 14px;
-  padding: 12px; border-radius: 10px;
-  border: 1.5px dashed var(--tg-theme-hint-color, #bbb);
-  background: transparent;
-  color: var(--tg-theme-hint-color, #888);
-  font-size: 14px; cursor: pointer;
+  width: 100%; margin-top: 14px; padding: 12px; border-radius: 10px;
+  border: 1.5px dashed var(--tg-theme-hint-color,#bbb); background: transparent;
+  color: var(--tg-theme-hint-color,#888); font-size: 14px; cursor: pointer;
 }
-.skip-btn:active { opacity: .7; }
 
-/* ── Step 3: Summary table ────────────────────────── */
+/* Withdrawals */
+.section-hd { display: flex; align-items: center; justify-content: space-between; margin: 16px 0 8px; }
+.section-hd h3 { margin: 0; }
+.wd-row-el {
+  display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 8px;
+  align-items: end; margin-bottom: 10px;
+}
+.wd-row-el .form-group { margin-bottom: 0; }
+.computed-field {
+  padding: 11px 12px; border-radius: 10px;
+  background: var(--tg-theme-secondary-bg-color, #f1f1f1);
+  color: var(--tg-theme-hint-color,#888); font-size: 14px;
+}
+.rm-btn {
+  width: 38px; height: 38px; border-radius: 50%; border: none;
+  background: rgba(239,68,68,.12); color: #ef4444; font-size: 20px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+
+/* Step config cards */
+.step-cfg-card {
+  border: 1.5px solid var(--tg-theme-secondary-bg-color,#e0e0e0);
+  border-radius: 12px; padding: 14px; margin-bottom: 12px;
+}
+.step-cfg-hd { font-size: 13px; font-weight: 700; color: var(--tg-theme-hint-color,#888); margin-bottom: 10px; }
+
+/* Match picker */
+.picker-search-input { margin-bottom: 8px; }
+.day-label {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--tg-theme-hint-color,#888); padding: 8px 0 4px;
+}
+.match-card-picker {
+  border: 1.5px solid var(--tg-theme-secondary-bg-color,#e0e0e0);
+  border-radius: 10px; margin-bottom: 8px; overflow: hidden;
+}
+.match-header {
+  display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+  background: var(--tg-theme-secondary-bg-color,#f5f5f5);
+  font-size: 13px; font-weight: 600;
+}
+.live-badge {
+  font-size: 11px; font-weight: 700; background: #ef4444;
+  color: #fff; padding: 2px 6px; border-radius: 4px; flex-shrink: 0;
+}
+.match-time { font-size: 11px; color: #f59e0b; font-weight: 700; flex-shrink: 0; }
+.match-name-picker { font-size: 13px; font-weight: 600; }
+.bet-grid {
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  border-top: 1px solid var(--tg-theme-secondary-bg-color,#e0e0e0);
+}
+.bet-col { border-right: 1px solid var(--tg-theme-secondary-bg-color,#e0e0e0); }
+.bet-col:last-child { border-right: none; }
+.bet-col-label {
+  font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+  color: var(--tg-theme-hint-color,#888); text-align: center;
+  padding: 5px 2px 3px; border-bottom: 1px solid var(--tg-theme-secondary-bg-color,#e0e0e0);
+}
+.bet-btns { display: flex; flex-direction: column; gap: 0; }
+.bet-btn {
+  width: 100%; padding: 8px 2px; border: none; background: transparent;
+  color: var(--tg-theme-text-color,#000); font-size: 12px; font-weight: 600;
+  cursor: pointer; text-align: center; border-bottom: 1px solid var(--tg-theme-secondary-bg-color,#eee);
+}
+.bet-btn:last-child { border-bottom: none; }
+.bet-btn:active { background: var(--tg-theme-button-color,#2481cc); color: var(--tg-theme-button-text-color,#fff); }
+.search-msg { padding: 10px; text-align: center; font-size: 13px; color: var(--tg-theme-hint-color,#888); }
+
+/* UO selector */
+.uo-panel { padding: 12px; background: var(--tg-theme-secondary-bg-color,#f5f5f5); border-radius: 10px; margin-bottom: 10px; }
+.uo-match { font-size: 13px; font-weight: 600; margin-bottom: 10px; }
+.thresh-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; margin-bottom: 10px; }
+.thresh-btn {
+  padding: 10px; border-radius: 8px; border: 1.5px solid var(--tg-theme-secondary-bg-color,#ddd);
+  background: var(--tg-theme-bg-color,#fff); color: var(--tg-theme-text-color,#000);
+  font-size: 14px; font-weight: 700; cursor: pointer; text-align: center;
+}
+.thresh-btn.sel { border-color: var(--tg-theme-button-color,#2481cc); background: var(--tg-theme-button-color,#2481cc); color: var(--tg-theme-button-text-color,#fff); }
+.dir-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.dir-btn {
+  padding: 12px; border-radius: 8px; border: 1.5px solid var(--tg-theme-secondary-bg-color,#ddd);
+  background: var(--tg-theme-bg-color,#fff); color: var(--tg-theme-text-color,#000);
+  font-size: 14px; font-weight: 700; cursor: pointer; text-align: center;
+}
+.dir-btn.sel { border-color: var(--tg-theme-button-color,#2481cc); background: var(--tg-theme-button-color,#2481cc); color: var(--tg-theme-button-text-color,#fff); }
+
+/* Confirm panel */
+.confirm-panel { padding: 12px; background: var(--tg-theme-secondary-bg-color,#f5f5f5); border-radius: 10px; margin-bottom: 10px; }
+.confirm-match-name { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.confirm-bet-label { font-size: 13px; color: var(--tg-theme-hint-color,#888); margin-bottom: 12px; }
+.confirm-actions { display: flex; gap: 8px; margin-top: 10px; }
+
+/* Confirmed match card */
+.match-confirmed-card {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 12px; border-radius: 10px;
+  background: var(--tg-theme-secondary-bg-color,#f1f1f1); margin-bottom: 8px;
+}
+.match-confirmed-info .match-confirmed-name { font-size: 13px; font-weight: 600; }
+.match-confirmed-info .match-confirmed-bet { font-size: 12px; color: var(--tg-theme-hint-color,#888); margin-top: 2px; }
+
+/* Summary */
 .summary-meta {
   padding: 13px 14px; border-radius: 10px;
-  background: var(--tg-theme-secondary-bg-color, #f1f1f1);
-  margin-bottom: 14px; font-size: 13px;
+  background: var(--tg-theme-secondary-bg-color,#f1f1f1); margin-bottom: 14px; font-size: 13px;
 }
 .summary-meta .title { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
-.summary-meta .row { color: var(--tg-theme-hint-color, #888); }
-.summary-meta .row b { color: var(--tg-theme-text-color, #000); }
-
-.tbl-wrap {
-  overflow-x: auto; margin-bottom: 16px;
-  border-radius: 10px;
-  border: 1.5px solid var(--tg-theme-secondary-bg-color, #e8e8e8);
-}
-table.sim {
-  width: 100%; border-collapse: collapse; font-size: 13px;
-  min-width: 300px;
-}
-table.sim th {
-  padding: 9px 11px;
-  background: var(--tg-theme-secondary-bg-color, #f1f1f1);
-  color: var(--tg-theme-hint-color, #888);
-  text-align: right; font-size: 11px; font-weight: 700;
-  text-transform: uppercase; letter-spacing: .04em;
-  white-space: nowrap;
-}
+.summary-meta .row { color: var(--tg-theme-hint-color,#888); margin-top: 2px; }
+.summary-meta .row b { color: var(--tg-theme-text-color,#000); }
+.tbl-wrap { overflow-x: auto; margin-bottom: 16px; border-radius: 10px; border: 1.5px solid var(--tg-theme-secondary-bg-color,#e8e8e8); }
+table.sim { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 260px; }
+table.sim th { padding: 9px 11px; background: var(--tg-theme-secondary-bg-color,#f1f1f1); color: var(--tg-theme-hint-color,#888); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; text-align: right; white-space: nowrap; }
 table.sim th:first-child { text-align: left; }
-table.sim td {
-  padding: 9px 11px;
-  border-top: 1px solid var(--tg-theme-secondary-bg-color, #f0f0f0);
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
+table.sim td { padding: 9px 11px; border-top: 1px solid var(--tg-theme-secondary-bg-color,#f0f0f0); text-align: right; font-variant-numeric: tabular-nums; }
 table.sim td:first-child { text-align: left; font-weight: 600; }
-table.sim tr.wd-row-sim td {
-  background: rgba(251,191,36,.12);
-  color: #92400e; font-size: 12px; text-align: left;
-  border-top: none; padding-top: 4px; padding-bottom: 6px;
-}
+table.sim tr.wd-row-sim td { background: rgba(251,191,36,.12); color: #92400e; font-size: 12px; text-align: left; border-top: none; padding-top: 4px; padding-bottom: 6px; }
 
-/* ── Nav bar ──────────────────────────────────────── */
+/* Alerts */
+.alert { padding: 11px 14px; border-radius: 10px; font-size: 13px; margin-bottom: 12px; }
+.alert-err { background: rgba(239,68,68,.12); color: #991b1b; }
+.alert-ok { background: rgba(34,197,94,.15); color: #166534; }
+
+/* Nav bar */
 .nav-bar {
-  position: fixed; bottom: 0; left: 0; right: 0;
-  display: flex; gap: 10px;
-  padding: 11px 16px;
-  padding-bottom: calc(11px + env(safe-area-inset-bottom, 0px));
-  background: var(--tg-theme-bg-color, #fff);
-  border-top: 1px solid var(--tg-theme-secondary-bg-color, #e0e0e0);
-  z-index: 30;
+  position: fixed; bottom: 0; left: 0; right: 0; display: flex; gap: 10px;
+  padding: 11px 16px; padding-bottom: calc(11px + env(safe-area-inset-bottom,0px));
+  background: var(--tg-theme-bg-color,#fff); border-top: 1px solid var(--tg-theme-secondary-bg-color,#e0e0e0); z-index: 30;
 }
 .nav-bar .btn-primary { flex: 1; }
-
-/* ── Spinner ──────────────────────────────────────── */
-.spinner {
-  width: 18px; height: 18px;
-  border: 2.5px solid rgba(255,255,255,.35);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: spin .55s linear infinite;
-}
+.spinner { width: 18px; height: 18px; border: 2.5px solid rgba(255,255,255,.35); border-top-color: #fff; border-radius: 50%; animation: spin .55s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
 
-<!-- Step progress bar -->
-<div class="step-bar">
+<!-- Step bar -->
+<div class="step-bar" id="step-bar">
   <div class="step-dot active" id="dot1">1</div>
   <div class="step-line"></div>
   <div class="step-dot" id="dot2">2</div>
   <div class="step-line"></div>
   <div class="step-dot" id="dot3">3</div>
-  <span class="step-label" id="step-label">Configurazione</span>
+  <span class="step-label" id="step-label">Config</span>
 </div>
 
-<!-- ── STEP 1: Config ─────────────────────────────── -->
+<!-- ── PANE 1: Config base ────────────────────────────── -->
 <div id="pane1" class="pane active">
-  <h2>Configurazione Scalata</h2>
+  <h2>Nuova Scalata</h2>
 
   <div class="form-group">
     <label>Nome Scalata</label>
@@ -370,8 +250,8 @@ table.sim tr.wd-row-sim td {
   </div>
 
   <div class="form-group">
-    <label>Moltiplicatore</label>
-    <select id="f-mult-sel">
+    <label>Moltiplicatore default</label>
+    <select id="f-mult-sel" onchange="onMultSel()">
       <option value="1.20">×1.20</option>
       <option value="1.25">×1.25</option>
       <option value="1.30" selected>×1.30</option>
@@ -379,44 +259,28 @@ table.sim tr.wd-row-sim td {
       <option value="1.50">×1.50</option>
       <option value="custom">Altro…</option>
     </select>
-    <input type="number" id="f-mult-custom" placeholder="es. 1.35" min="1.01" step="0.01"
-      style="margin-top:8px;display:none">
+    <input type="number" id="f-mult-custom" placeholder="es. 1.35" min="1.01" step="0.01" style="margin-top:8px;display:none">
   </div>
 
-  <!-- Withdrawals -->
   <div class="section-hd">
     <h3>Ritiri programmati</h3>
     <button class="btn btn-secondary btn-sm" onclick="addWd()">+ Aggiungi</button>
   </div>
-  <p class="hint-text">Dopo ogni step indicato, una parte del profitto viene prelevata e il capitale riparte.</p>
+  <p class="hint-text">Dopo ogni step indicato, una parte del profitto viene prelevata.</p>
   <div id="wd-list"></div>
 </div>
 
-<!-- ── STEP 2: Prima partita ──────────────────────── -->
+<!-- ── PANE 2: Step per Step ──────────────────────────── -->
 <div id="pane2" class="pane">
-  <h2>Prima Partita <span style="font-weight:400;font-size:14px;color:var(--tg-theme-hint-color,#888)">(opzionale)</span></h2>
-
-  <div id="search-section">
-    <div class="form-group search-wrap">
-      <label>Cerca squadra o partita</label>
-      <input type="text" id="f-search" placeholder="es. Italia, Real Madrid…" autocomplete="off">
-    </div>
-    <div id="search-results"></div>
-    <div id="api-down" class="alert alert-warn" style="display:none">
-      ⚠️ API non disponibile — potrai collegare la partita manualmente dopo.
-    </div>
-  </div>
-
-  <div id="outcome-section" style="display:none">
-    <div class="match-card" id="sel-match-card"></div>
-    <div class="outcome-sel" id="outcome-sel"></div>
-    <button class="link-btn" onclick="clearMatchSel()">↩ Cambia partita</button>
-  </div>
-
-  <button class="skip-btn" id="skip-btn" onclick="skipMatch()">Salta → (senza partita)</button>
+  <h2>Step per Step</h2>
+  <p class="hint-text">Imposta quota e partita per ogni step. Puoi saltare tutto.</p>
+  <div id="step-cfg-list"></div>
+  <button class="skip-btn" onclick="skipToSummary()">
+    Salta tutto — configura step per step dal topic →
+  </button>
 </div>
 
-<!-- ── STEP 3: Riepilogo ──────────────────────────── -->
+<!-- ── PANE 3: Riepilogo ──────────────────────────────── -->
 <div id="pane3" class="pane">
   <h2>Riepilogo</h2>
   <div id="summary"></div>
@@ -433,370 +297,613 @@ table.sim tr.wd-row-sim td {
 // ── State ─────────────────────────────────────────────────────────────────
 const S = {
   step: 1,
-  wds: [],       // [{id, after_step, preleva, restart_capital}]
+  wds: [],
   wdSeq: 0,
-  selMatch: null,  // {id, name, home_team, away_team, date}
-  selOutcome: null,
+  // Per-step configs: [{quota, capBefore, capAfter, manualAfter, match, outcome, betType}]
+  stepCfgs: [],
 };
 
-let _searchTimer = null;
-
-// ── Init ──────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   try { Telegram.WebApp.ready(); Telegram.WebApp.expand(); } catch (_) {}
-
-  document.getElementById('f-mult-sel').addEventListener('change', e => {
-    const custom = document.getElementById('f-mult-custom');
-    custom.style.display = e.target.value === 'custom' ? '' : 'none';
-    if (e.target.value === 'custom') custom.focus();
-    recomputeAllWds();
-  });
-
-  document.getElementById('f-mult-custom').addEventListener('input', recomputeAllWds);
-  document.getElementById('f-capital').addEventListener('input', recomputeAllWds);
-  document.getElementById('f-search').addEventListener('input', onSearchInput);
+  updateNav();
 });
+
+// ── Navigation ────────────────────────────────────────────────────────────
+function showPane(n) {
+  [1,2,3].forEach(i => document.getElementById(`pane${i}`).classList.remove('active'));
+  document.getElementById(`pane${n}`).classList.add('active');
+  window.scrollTo(0, 0);
+  S.step = n;
+  updateNav();
+}
+
+function updateNav() {
+  const isFirst = S.step === 1;
+  const isLast = S.step === 3;
+  document.getElementById('btn-back').style.display = isFirst ? 'none' : '';
+  const btn = document.getElementById('btn-next');
+  if (isLast) {
+    btn.textContent = '✅ Crea Scalata';
+    btn.onclick = submitScalata;
+  } else {
+    btn.textContent = 'Avanti →';
+    btn.onclick = nextStep;
+  }
+  // Update step dots
+  [1,2,3].forEach(i => {
+    const d = document.getElementById(`dot${i}`);
+    d.classList.remove('active','done');
+    if (i < S.step) d.classList.add('done');
+    else if (i === S.step) d.classList.add('active');
+  });
+  const labels = {1:'Config', 2:'Step x Step', 3:'Riepilogo'};
+  document.getElementById('step-label').textContent = labels[S.step] || '';
+}
+
+function nextStep() {
+  if (S.step === 1) {
+    if (!validateStep1()) return;
+    buildStepCfgPanes();
+    showPane(2);
+  } else if (S.step === 2) {
+    showPane(3);
+    renderSummary();
+  }
+}
+
+function skipToSummary() {
+  showPane(3);
+  renderSummary();
+}
+
+function prevStep() {
+  if (S.step === 2) showPane(1);
+  else if (S.step === 3) showPane(2);
+}
+
+// ── Validation ────────────────────────────────────────────────────────────
+function validateStep1() {
+  if (!document.getElementById('f-name').value.trim()) { alert('Inserisci il nome della scalata.'); return false; }
+  if (!getCapital() || getCapital() <= 0) { alert('Inserisci un capitale valido.'); return false; }
+  if (getMultiplier() <= 1) { alert('Il moltiplicatore deve essere > 1.'); return false; }
+  if (!getSteps() || getSteps() < 1) { alert('Inserisci un numero di step valido.'); return false; }
+  return true;
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 function getMultiplier() {
   const sel = document.getElementById('f-mult-sel').value;
-  if (sel !== 'custom') return parseFloat(sel);
-  return parseFloat(document.getElementById('f-mult-custom').value) || 1.30;
+  return sel !== 'custom' ? parseFloat(sel) : (parseFloat(document.getElementById('f-mult-custom').value) || 1.30);
 }
-
-function getCapital() {
-  return parseFloat(document.getElementById('f-capital').value) || 0;
+function getCapital() { return parseFloat(document.getElementById('f-capital').value) || 0; }
+function getSteps() { return parseInt(document.getElementById('f-steps').value) || 0; }
+function fmt(n) { return '€' + n.toFixed(2); }
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-
-function getSteps() {
-  return parseInt(document.getElementById('f-steps').value) || 0;
-}
-
-function fmt(n) {
-  return '€' + n.toFixed(2);
-}
-
 function fmtDate(d) {
   if (!d) return '';
   try {
     const dt = new Date(d);
-    return dt.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' }) +
-           ' ' + dt.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+    return dt.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit'}) + ' ' +
+           dt.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
   } catch (_) { return d; }
 }
-
-// ── Step navigation ───────────────────────────────────────────────────────
-const LABELS = ['', 'Configurazione', 'Prima Partita', 'Riepilogo'];
-
-function gotoStep(n) {
-  document.getElementById(`pane${S.step}`).classList.remove('active');
-  [1, 2, 3].forEach(i => {
-    const dot = document.getElementById(`dot${i}`);
-    dot.classList.remove('active', 'done');
-    if (i < n) dot.classList.add('done');
-    else if (i === n) dot.classList.add('active');
-  });
-
-  S.step = n;
-  document.getElementById(`pane${n}`).classList.add('active');
-  document.getElementById('step-label').textContent = LABELS[n];
-
-  const btnBack = document.getElementById('btn-back');
-  const btnNext = document.getElementById('btn-next');
-  btnBack.style.display = n === 1 ? 'none' : '';
-
-  if (n === 3) {
-    renderSummary();
-    btnNext.textContent = '✅ Crea Scalata';
-    btnNext.onclick = submitScalata;
-  } else {
-    btnNext.textContent = 'Avanti →';
-    btnNext.onclick = nextStep;
-  }
-
-  window.scrollTo(0, 0);
+function fmtTime(d) {
+  if (!d) return '';
+  try {
+    return new Date(d).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+  } catch (_) { return ''; }
+}
+function getDayLabel(dateStr) {
+  if (!dateStr) return 'Senza data';
+  try {
+    const dt = new Date(dateStr);
+    const today = new Date(); today.setHours(0,0,0,0);
+    const tom = new Date(today); tom.setDate(tom.getDate()+1);
+    const d = new Date(dt); d.setHours(0,0,0,0);
+    if (d.getTime() === today.getTime()) return 'Oggi';
+    if (d.getTime() === tom.getTime()) return 'Domani';
+    return dt.toLocaleDateString('it-IT',{weekday:'short',day:'2-digit',month:'2-digit'});
+  } catch (_) { return ''; }
+}
+function onMultSel() {
+  const c = document.getElementById('f-mult-custom');
+  c.style.display = document.getElementById('f-mult-sel').value === 'custom' ? '' : 'none';
 }
 
-function nextStep() {
-  if (S.step === 1 && !validateStep1()) return;
-  if (S.step < 3) gotoStep(S.step + 1);
-}
-
-function prevStep() {
-  if (S.step > 1) gotoStep(S.step - 1);
-}
-
-function skipMatch() {
-  S.selMatch = null;
-  S.selOutcome = null;
-  gotoStep(3);
-}
-
-// ── Step 1 validation ─────────────────────────────────────────────────────
-function validateStep1() {
-  if (!document.getElementById('f-name').value.trim()) {
-    alert('Inserisci il nome della scalata.');
-    document.getElementById('f-name').focus();
-    return false;
-  }
-  const cap = getCapital();
-  if (!cap || cap <= 0) {
-    alert('Inserisci un capitale iniziale valido.');
-    return false;
-  }
-  const mult = getMultiplier();
-  if (!mult || mult <= 1) {
-    alert('Il moltiplicatore deve essere maggiore di 1.');
-    return false;
-  }
-  const steps = getSteps();
-  if (!steps || steps < 1) {
-    alert('Inserisci un numero di step valido (min 1).');
-    return false;
-  }
-  return true;
-}
-
-// ── Withdrawals ───────────────────────────────────────────────────────────
-
-// Compute capital after winning `step` given prior withdrawals only.
-function capitalAfterStep(capital, mult, priorWds, step) {
-  // priorWds sorted by after_step, only those with after_step < step
-  const map = {};
-  for (const w of priorWds) map[w.after_step] = w.restart_capital;
-  let cap = capital;
-  for (let s = 1; s <= step; s++) {
-    cap = cap * mult;
-    // apply restart if there's a withdrawal after this step AND step < target
-    if (s < step && map[s] != null) cap = map[s];
-  }
-  return parseFloat(cap.toFixed(2));
-}
-
-function computeRestartCapital(wd) {
-  const cap = getCapital();
-  const mult = getMultiplier();
-  const afterStep = parseInt(wd.after_step) || 0;
-  const preleva = parseFloat(wd.preleva);
+// ── Withdrawals (appendChild approach — no innerHTML rebuild on input) ─────
+function _computeRestartCap(afterStep, preleva) {
   if (!afterStep || isNaN(preleva)) return null;
-
-  // Only use OTHER withdrawals that come strictly before this step
-  const prior = S.wds
-    .filter(w => w !== wd && w.after_step && parseInt(w.after_step) < afterStep && w.restart_capital != null)
-    .map(w => ({ after_step: parseInt(w.after_step), restart_capital: w.restart_capital }))
-    .sort((a, b) => a.after_step - b.after_step);
-
-  const capAtStep = capitalAfterStep(cap, mult, prior, afterStep);
-  return Math.max(0, parseFloat((capAtStep - preleva).toFixed(2)));
+  const cap = getCapital(), mult = getMultiplier();
+  let c = cap;
+  for (let s = 1; s <= afterStep; s++) {
+    const cfg = S.stepCfgs[s-1] || {};
+    const q = cfg.quota || mult;
+    c = parseFloat((c * q).toFixed(2));
+    // apply prior withdrawals
+    const priorWd = S.wds.find(w => parseInt(w.after_step) === s && s < afterStep);
+    if (priorWd && priorWd.restart_capital != null) c = priorWd.restart_capital;
+  }
+  return Math.max(0, parseFloat((c - preleva).toFixed(2)));
 }
 
-function recomputeAllWds() {
+function _updateAllRestarts() {
   for (const wd of S.wds) {
-    wd.restart_capital = computeRestartCapital(wd);
+    const as = parseInt(wd.after_step);
+    const p = parseFloat(wd.preleva);
+    wd.restart_capital = (!isNaN(as) && !isNaN(p)) ? _computeRestartCap(as, p) : null;
+    const el = document.getElementById(`wd-rc-${wd.id}`);
+    if (el) el.textContent = wd.restart_capital != null ? fmt(wd.restart_capital) : '—';
   }
-  renderWds();
 }
 
 function addWd() {
-  S.wds.push({ id: ++S.wdSeq, after_step: '', preleva: '', restart_capital: null });
-  renderWds();
+  const id = ++S.wdSeq;
+  S.wds.push({id, after_step: '', preleva: '', restart_capital: null});
+  const el = document.getElementById('wd-list');
+  // Remove empty-state text if present
+  const empty = el.querySelector('.hint-text');
+  if (empty) empty.remove();
+
+  const row = document.createElement('div');
+  row.className = 'wd-row-el';
+  row.id = `wd-row-${id}`;
+  row.innerHTML = `
+    <div class="form-group">
+      <label>Dopo step</label>
+      <input type="number" min="1" placeholder="N" id="wd-step-${id}"
+             onchange="onWdField(${id},'after_step',this.value)">
+    </div>
+    <div class="form-group">
+      <label>Preleva €</label>
+      <input type="number" min="0" step="0.01" placeholder="0.00" id="wd-amt-${id}"
+             onchange="onWdField(${id},'preleva',this.value)">
+    </div>
+    <div class="form-group">
+      <label>Riparti con</label>
+      <div class="computed-field" id="wd-rc-${id}">—</div>
+    </div>
+    <button class="rm-btn" onclick="removeWd(${id})">×</button>`;
+  el.appendChild(row);
 }
 
 function removeWd(id) {
   S.wds = S.wds.filter(w => w.id !== id);
-  recomputeAllWds();
+  const row = document.getElementById(`wd-row-${id}`);
+  if (row) row.remove();
+  if (!S.wds.length) {
+    const el = document.getElementById('wd-list');
+    if (!el.querySelector('.hint-text')) {
+      const p = document.createElement('p');
+      p.className = 'hint-text';
+      p.textContent = 'Nessun ritiro aggiunto.';
+      el.appendChild(p);
+    }
+  }
+  _updateAllRestarts();
 }
 
-function onWdChange(id, field, val) {
+function onWdField(id, field, val) {
   const wd = S.wds.find(w => w.id === id);
   if (!wd) return;
-  wd[field] = val === '' ? '' : (field === 'after_step' ? parseInt(val) || '' : parseFloat(val));
-  wd.restart_capital = computeRestartCapital(wd);
-  // Re-compute all others too (order dependency)
-  for (const w of S.wds) {
-    if (w !== wd) w.restart_capital = computeRestartCapital(w);
-  }
-  renderWds();
+  wd[field] = field === 'after_step' ? (parseInt(val) || '') : (parseFloat(val) || '');
+  _updateAllRestarts();
 }
 
-function renderWds() {
-  const el = document.getElementById('wd-list');
-  if (S.wds.length === 0) {
-    el.innerHTML = '<p class="hint-text" style="margin-bottom:0">Nessun ritiro aggiunto.</p>';
-    return;
+// ── Step config pane ──────────────────────────────────────────────────────
+function buildStepCfgPanes() {
+  const total = getSteps(), mult = getMultiplier(), cap = getCapital();
+  const wdMap = {};
+  for (const w of S.wds) if (parseInt(w.after_step) && w.restart_capital != null) wdMap[parseInt(w.after_step)] = w;
+
+  // Compute cascaded capitals
+  const capBefore = [cap];
+  for (let i = 1; i < total; i++) {
+    const prev = i - 1;
+    const cfg = S.stepCfgs[prev] || {};
+    const prevAfter = cfg.capAfter != null ? cfg.capAfter : parseFloat(((cfg.capBefore ?? capBefore[prev]) * (cfg.quota || mult)).toFixed(2));
+    const c = wdMap[i] ? wdMap[i].restart_capital : prevAfter;
+    capBefore.push(parseFloat(c.toFixed(2)));
   }
-  el.innerHTML = S.wds.map(w => `
-    <div class="wd-row">
-      <div class="form-group">
-        <label>Dopo step</label>
-        <input type="number" min="1" value="${w.after_step}"
-          placeholder="N"
-          oninput="onWdChange(${w.id},'after_step',this.value)"
-          onchange="onWdChange(${w.id},'after_step',this.value)">
+
+  // Init stepCfgs for new steps
+  while (S.stepCfgs.length < total) S.stepCfgs.push({});
+  for (let i = 0; i < total; i++) {
+    const cfg = S.stepCfgs[i];
+    if (cfg.capBefore == null) cfg.capBefore = capBefore[i];
+    if (cfg.quota == null) cfg.quota = mult;
+    if (cfg.capAfter == null) cfg.capAfter = parseFloat((cfg.capBefore * cfg.quota).toFixed(2));
+    if (cfg.manualAfter == null) cfg.manualAfter = false;
+  }
+
+  const el = document.getElementById('step-cfg-list');
+  el.innerHTML = '';
+  for (let i = 0; i < total; i++) {
+    const cfg = S.stepCfgs[i];
+    const card = document.createElement('div');
+    card.className = 'step-cfg-card';
+    card.id = `sccard-${i}`;
+    card.innerHTML = `
+      <div class="step-cfg-hd">Step ${i + 1}</div>
+      <div class="row-3" style="margin-bottom:10px">
+        <div class="form-group" style="margin-bottom:0">
+          <label>Cap. Prima €</label>
+          <input type="number" min="0.01" step="0.01" id="sccb-${i}"
+                 value="${cfg.capBefore.toFixed(2)}"
+                 onchange="onStepCapBefore(${i},this.value)">
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Quota (×)</label>
+          <input type="number" min="1.01" step="0.01" id="scq-${i}"
+                 value="${cfg.quota}"
+                 onchange="onStepQuota(${i},this.value)">
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label>Cap. Dopo €</label>
+          <input type="number" min="0.01" step="0.01" id="scca-${i}"
+                 value="${cfg.capAfter.toFixed(2)}"
+                 class="${cfg.manualAfter ? 'manual' : ''}"
+                 onchange="onStepCapAfter(${i},this.value)">
+        </div>
       </div>
-      <div class="form-group">
-        <label>Preleva €</label>
-        <input type="number" min="0" step="0.01" value="${w.preleva}"
-          placeholder="0.00"
-          oninput="onWdChange(${w.id},'preleva',this.value)"
-          onchange="onWdChange(${w.id},'preleva',this.value)">
+      <div id="pk-wrap-${i}"></div>`;
+    el.appendChild(card);
+
+    // Init picker for this step
+    Picker.init(`s${i}`, document.getElementById(`pk-wrap-${i}`), (match, outcome, betType, quota) => {
+      const c = S.stepCfgs[i] = S.stepCfgs[i] || {};
+      c.match = match;
+      c.outcome = outcome;
+      c.betType = betType;
+      if (quota && !c.manualAfter) {
+        c.quota = quota;
+        const cb = c.capBefore || 0;
+        c.capAfter = parseFloat((cb * quota).toFixed(2));
+        const qEl = document.getElementById(`scq-${i}`);
+        const caEl = document.getElementById(`scca-${i}`);
+        if (qEl) qEl.value = quota;
+        if (caEl) caEl.value = c.capAfter.toFixed(2);
+      }
+    });
+  }
+}
+
+function onStepCapBefore(i, val) {
+  const cfg = S.stepCfgs[i] = S.stepCfgs[i] || {};
+  cfg.capBefore = parseFloat(val) || 0;
+  if (!cfg.manualAfter) {
+    cfg.capAfter = parseFloat((cfg.capBefore * (cfg.quota || getMultiplier())).toFixed(2));
+    const el = document.getElementById(`scca-${i}`);
+    if (el) el.value = cfg.capAfter.toFixed(2);
+  }
+}
+
+function onStepQuota(i, val) {
+  const cfg = S.stepCfgs[i] = S.stepCfgs[i] || {};
+  cfg.quota = parseFloat(val) || null;
+  if (!cfg.manualAfter) {
+    cfg.capAfter = parseFloat(((cfg.capBefore || 0) * (cfg.quota || 1)).toFixed(2));
+    const el = document.getElementById(`scca-${i}`);
+    if (el) el.value = cfg.capAfter.toFixed(2);
+  }
+}
+
+function onStepCapAfter(i, val) {
+  const cfg = S.stepCfgs[i] = S.stepCfgs[i] || {};
+  cfg.capAfter = parseFloat(val) || 0;
+  cfg.manualAfter = true;
+  const el = document.getElementById(`scca-${i}`);
+  if (el) el.classList.add('manual');
+  if (cfg.capBefore && cfg.capBefore > 0) {
+    cfg.quota = parseFloat((cfg.capAfter / cfg.capBefore).toFixed(4));
+    const qEl = document.getElementById(`scq-${i}`);
+    if (qEl) qEl.value = cfg.quota;
+  }
+}
+
+// ── Match Picker ──────────────────────────────────────────────────────────
+const Picker = (() => {
+  const _s = {};       // state per picker id
+  const _mc = {};      // match cache: mid → match
+  let _mcSeq = 0;
+
+  const _LIVE = new Set(['LIVE','in_play','IN_PLAY','1H','2H','HT','ET','P']);
+  const _FIN  = new Set(['FT','finished','completed','FINISHED','FULL_TIME','AET','PEN']);
+  function isLive(s) { return _LIVE.has(s); }
+  function isFin(s)  { return _FIN.has(s); }
+
+  function _showPhase(id, phase) {
+    const container = _s[id]?.container;
+    if (!container) return;
+    ['search','uo','confirm','done'].forEach(p => {
+      const el = container.querySelector(`[data-phase="${p}"]`);
+      if (el) el.style.display = p === phase ? '' : 'none';
+    });
+    _s[id].phase = phase;
+  }
+
+  function _buildMatchHtml(pid, matches) {
+    const groups = {};
+    for (const m of matches) {
+      if (isFin(m.status)) continue;
+      const day = getDayLabel(m.date);
+      groups[day] = groups[day] || [];
+      groups[day].push(m);
+    }
+    let html = '';
+    for (const [day, dayMatches] of Object.entries(groups)) {
+      if (!dayMatches.length) continue;
+      html += `<div class="day-label">${escHtml(day)}</div>`;
+      for (const m of dayMatches) {
+        const mid = `mc${_mcSeq++}`;
+        _mc[mid] = m;
+        const live = isLive(m.status);
+        const score = (live && m.home_score != null && m.away_score != null)
+          ? ` ${m.home_score}–${m.away_score}` : '';
+        const hdr = live
+          ? `<span class="live-badge">LIVE${score}</span>`
+          : `<span class="match-time">${fmtTime(m.date)}</span>`;
+        html += `
+<div class="match-card-picker">
+  <div class="match-header">${hdr}<span class="match-name-picker">${escHtml(m.name)}</span></div>
+  <div class="bet-grid">
+    <div class="bet-col">
+      <div class="bet-col-label">FINALE</div>
+      <div class="bet-btns">
+        <button class="bet-btn" onclick="Picker.sel('${pid}','${mid}','1','Finale 1X2')">1</button>
+        <button class="bet-btn" onclick="Picker.sel('${pid}','${mid}','X','Finale 1X2')">X</button>
+        <button class="bet-btn" onclick="Picker.sel('${pid}','${mid}','2','Finale 1X2')">2</button>
       </div>
-      <div class="form-group">
-        <label>Riparti con</label>
-        <div class="computed-field">${w.restart_capital != null ? fmt(w.restart_capital) : '—'}</div>
-      </div>
-      <button class="rm-btn" onclick="removeWd(${w.id})" title="Rimuovi">×</button>
     </div>
-  `).join('');
-}
-
-// ── Match search ──────────────────────────────────────────────────────────
-function onSearchInput(e) {
-  clearTimeout(_searchTimer);
-  const q = e.target.value.trim();
-  const el = document.getElementById('search-results');
-  if (q.length < 2) { el.innerHTML = ''; return; }
-  _searchTimer = setTimeout(() => doSearch(q), 400);
-}
-
-async function doSearch(q) {
-  const el = document.getElementById('search-results');
-  el.innerHTML = '<div class="search-msg">🔍 Ricerca in corso…</div>';
-  try {
-    const res = await fetch(`/api/v1/telegram/matches/search?q=${encodeURIComponent(q)}`);
-    const data = await res.json();
-
-    if (data.api_down) {
-      el.innerHTML = '';
-      document.getElementById('api-down').style.display = '';
-      return;
+    <div class="bet-col">
+      <div class="bet-col-label">DOPP.CH.</div>
+      <div class="bet-btns">
+        <button class="bet-btn" onclick="Picker.sel('${pid}','${mid}','1X','Doppia Chance')">1X</button>
+        <button class="bet-btn" onclick="Picker.sel('${pid}','${mid}','X2','Doppia Chance')">X2</button>
+        <button class="bet-btn" onclick="Picker.sel('${pid}','${mid}','12','Doppia Chance')">12</button>
+      </div>
+    </div>
+    <div class="bet-col">
+      <div class="bet-col-label">U/O</div>
+      <div class="bet-btns">
+        <button class="bet-btn" onclick="Picker.startUO('${pid}','${mid}','Under')">UN</button>
+        <button class="bet-btn" onclick="Picker.startUO('${pid}','${mid}','Over')">OV</button>
+      </div>
+    </div>
+    <div class="bet-col">
+      <div class="bet-col-label">GG/NG</div>
+      <div class="bet-btns">
+        <button class="bet-btn" onclick="Picker.sel('${pid}','${mid}','GG','GG/NG')">GG</button>
+        <button class="bet-btn" onclick="Picker.sel('${pid}','${mid}','NG','GG/NG')">NG</button>
+      </div>
+    </div>
+    <div class="bet-col">
+      <div class="bet-col-label">ALTRO</div>
+      <div class="bet-btns">
+        <button class="bet-btn" onclick="Picker.startCustom('${pid}','${mid}')">+</button>
+      </div>
+    </div>
+  </div>
+</div>`;
+      }
     }
-    document.getElementById('api-down').style.display = 'none';
-
-    if (!data.matches.length) {
-      el.innerHTML = '<div class="search-msg">Nessuna partita trovata.</div>';
-      return;
-    }
-
-    el.innerHTML = `<div class="result-list">${data.matches.map(m => `
-      <div class="match-item" onclick='selectMatch(${JSON.stringify(m)})'>
-        <div class="match-name">${escHtml(m.name)}</div>
-        <div class="match-date">${fmtDate(m.date)}</div>
-      </div>`).join('')}</div>`;
-
-  } catch (_) {
-    el.innerHTML = '';
-    document.getElementById('api-down').style.display = '';
+    return html || '<div class="search-msg">Nessuna partita disponibile.</div>';
   }
-}
 
-function escHtml(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
+  return {
+    init(id, container, onConfirm) {
+      _s[id] = { phase: 'search', match: null, outcome: null, betType: null,
+                 uoDir: null, uoThreshold: null, onConfirm, container, timer: null };
+      container.innerHTML = `
+<div data-phase="search">
+  <div class="form-group picker-search-input">
+    <label>Partita <span style="font-weight:400">(opzionale)</span></label>
+    <input type="text" placeholder="es. Italia, Barcellona…" autocomplete="off"
+           oninput="Picker.search('${id}',this.value)" id="pk-inp-${id}">
+  </div>
+  <div id="pk-res-${id}"></div>
+</div>
+<div data-phase="uo" style="display:none">
+  <div class="uo-panel">
+    <div class="uo-match" id="pk-uo-m-${id}"></div>
+    <p class="hint-text">Soglia</p>
+    <div class="thresh-grid" id="pk-thresh-${id}"></div>
+    <p class="hint-text" id="pk-dir-lbl-${id}" style="display:none">Tipo</p>
+    <div class="dir-grid" id="pk-dir-${id}" style="display:none"></div>
+    <button class="link-btn" onclick="Picker.back('${id}')" style="margin-top:8px">← Torna</button>
+  </div>
+</div>
+<div data-phase="confirm" style="display:none">
+  <div class="confirm-panel">
+    <div class="confirm-match-name" id="pk-cmatch-${id}"></div>
+    <div class="confirm-bet-label" id="pk-cbet-${id}"></div>
+    <div id="pk-ccustom-${id}"></div>
+    <div class="form-group" style="margin-top:10px">
+      <label>Quota (×)</label>
+      <input type="number" id="pk-quota-${id}" min="1.01" step="0.01" placeholder="es. 1.45">
+    </div>
+    <div class="confirm-actions">
+      <button class="btn btn-secondary btn-sm" onclick="Picker.back('${id}')">← Cambia</button>
+      <button class="btn btn-primary btn-sm" onclick="Picker.confirm('${id}')">✅ Conferma</button>
+    </div>
+  </div>
+</div>
+<div data-phase="done" style="display:none">
+  <div id="pk-done-${id}"></div>
+  <button class="link-btn" onclick="Picker.clear('${id}')" style="margin-top:6px">↩ Cambia partita</button>
+</div>`;
+    },
 
-function selectMatch(m) {
-  S.selMatch = m;
-  S.selOutcome = null;
+    search(id, val) {
+      clearTimeout(_s[id]?.timer);
+      const q = val.trim();
+      const el = document.getElementById(`pk-res-${id}`);
+      if (!el) return;
+      if (q.length < 2) { el.innerHTML = ''; return; }
+      _s[id].timer = setTimeout(async () => {
+        el.innerHTML = '<div class="search-msg">🔍 Ricerca…</div>';
+        try {
+          const res = await fetch(`/api/v1/telegram/matches/search?q=${encodeURIComponent(q)}`);
+          const data = await res.json();
+          if (!data.matches?.length) { el.innerHTML = '<div class="search-msg">Nessuna partita trovata.</div>'; return; }
+          el.innerHTML = _buildMatchHtml(id, data.matches);
+        } catch (_) { el.innerHTML = '<div class="search-msg">Errore API.</div>'; }
+      }, 400);
+    },
 
-  document.getElementById('search-section').style.display = 'none';
-  document.getElementById('skip-btn').style.display = 'none';
-  document.getElementById('outcome-section').style.display = '';
+    sel(pid, mid, outcome, betType) {
+      const m = _mc[mid]; if (!m) return;
+      const st = _s[pid];
+      st.match = m; st.outcome = outcome; st.betType = betType;
+      st.uoDir = null; st.uoThreshold = null;
+      document.getElementById(`pk-cmatch-${pid}`).textContent = m.name;
+      document.getElementById(`pk-cbet-${pid}`).textContent = `${outcome} (${betType})`;
+      document.getElementById(`pk-ccustom-${pid}`).innerHTML = '';
+      document.getElementById(`pk-quota-${pid}`).value = '';
+      _showPhase(pid, 'confirm');
+    },
 
-  document.getElementById('sel-match-card').innerHTML = `
-    <div class="match-name">${escHtml(m.name)}</div>
-    <div class="match-date" style="margin-top:3px;font-size:12px;color:var(--tg-theme-hint-color,#888)">${fmtDate(m.date)}</div>
-    <div id="badge-outcome"></div>
-  `;
+    startUO(pid, mid, dir) {
+      const m = _mc[mid]; if (!m) return;
+      _s[pid].match = m; _s[pid].uoDir = dir; _s[pid].uoThreshold = null;
+      document.getElementById(`pk-uo-m-${pid}`).textContent = m.name;
+      const threshEl = document.getElementById(`pk-thresh-${pid}`);
+      threshEl.innerHTML = [1.5,2.5,3.5,4.5].map(t =>
+        `<button class="thresh-btn" onclick="Picker.selThresh('${pid}',${t})">${t}</button>`
+      ).join('');
+      document.getElementById(`pk-dir-lbl-${pid}`).style.display = 'none';
+      document.getElementById(`pk-dir-${pid}`).style.display = 'none';
+      _showPhase(pid, 'uo');
+    },
 
-  document.getElementById('outcome-sel').innerHTML = ['1','X','2'].map((code, i) => {
-    const labels = [escHtml(m.home_team), 'Pareggio', escHtml(m.away_team)];
-    return `<button class="outcome-btn" id="ob-${code}" onclick="selectOutcome('${code}')">
-      <span class="code">${code}</span>${labels[i]}
-    </button>`;
-  }).join('');
-}
+    selThresh(pid, t) {
+      _s[pid].uoThreshold = t;
+      // Highlight selected threshold
+      document.getElementById(`pk-thresh-${pid}`).querySelectorAll('.thresh-btn').forEach(b => {
+        b.classList.toggle('sel', parseFloat(b.textContent) === t);
+      });
+      // Show direction buttons
+      const dirEl = document.getElementById(`pk-dir-${pid}`);
+      dirEl.innerHTML = ['Under','Over'].map(d =>
+        `<button class="dir-btn${_s[pid].uoDir===d?' sel':''}" onclick="Picker.selDir('${pid}','${d}')">${d}</button>`
+      ).join('');
+      document.getElementById(`pk-dir-lbl-${pid}`).style.display = '';
+      dirEl.style.display = '';
+    },
 
-function selectOutcome(code) {
-  S.selOutcome = code;
-  document.querySelectorAll('.outcome-btn').forEach(b => b.classList.remove('selected'));
-  document.getElementById(`ob-${code}`).classList.add('selected');
-  const labels = { '1': S.selMatch.home_team, 'X': 'Pareggio', '2': S.selMatch.away_team };
-  document.getElementById('badge-outcome').innerHTML =
-    `<span class="badge">Puntata: ${code} – ${escHtml(labels[code])}</span>`;
-}
+    selDir(pid, dir) {
+      const st = _s[pid];
+      st.uoDir = dir;
+      st.outcome = `${dir} ${st.uoThreshold}`;
+      st.betType = `${dir} ${st.uoThreshold}`;
+      document.getElementById(`pk-cmatch-${pid}`).textContent = st.match.name;
+      document.getElementById(`pk-cbet-${pid}`).textContent = `${dir} ${st.uoThreshold}`;
+      document.getElementById(`pk-ccustom-${pid}`).innerHTML = '';
+      document.getElementById(`pk-quota-${pid}`).value = '';
+      _showPhase(pid, 'confirm');
+    },
 
-function clearMatchSel() {
-  S.selMatch = null; S.selOutcome = null;
-  document.getElementById('outcome-section').style.display = 'none';
-  document.getElementById('search-section').style.display = '';
-  document.getElementById('skip-btn').style.display = '';
-  document.getElementById('f-search').value = '';
-  document.getElementById('search-results').innerHTML = '';
-}
+    startCustom(pid, mid) {
+      const m = _mc[mid]; if (!m) return;
+      _s[pid].match = m; _s[pid].outcome = null; _s[pid].betType = null;
+      document.getElementById(`pk-cmatch-${pid}`).textContent = m.name;
+      document.getElementById(`pk-cbet-${pid}`).textContent = '';
+      document.getElementById(`pk-ccustom-${pid}`).innerHTML = `
+        <div class="form-group"><label>Tipo scommessa</label>
+        <input type="text" id="pk-custom-${pid}" placeholder="es. 1X2, Over 2.5…" autocomplete="off"></div>`;
+      document.getElementById(`pk-quota-${pid}`).value = '';
+      _showPhase(pid, 'confirm');
+    },
 
-// ── Summary simulation ────────────────────────────────────────────────────
-function simulate(capital, mult, totalSteps, wds) {
-  const map = {};
+    confirm(pid) {
+      const st = _s[pid];
+      const quota = parseFloat(document.getElementById(`pk-quota-${pid}`).value);
+      if (!quota || quota <= 1) { alert('Inserisci una quota valida (> 1).'); return; }
+      // Custom bet type
+      const customEl = document.getElementById(`pk-custom-${pid}`);
+      if (customEl && !st.outcome) {
+        const custom = customEl.value.trim();
+        st.outcome = custom || '?';
+        st.betType = st.outcome;
+      }
+      // Show done
+      document.getElementById(`pk-done-${pid}`).innerHTML = `
+        <div class="match-confirmed-card">
+          <div class="match-confirmed-info">
+            <div class="match-confirmed-name">${escHtml(st.match.name)}</div>
+            <div class="match-confirmed-bet">${escHtml(st.outcome || '—')} · ×${quota}</div>
+          </div>
+        </div>`;
+      _showPhase(pid, 'done');
+      if (st.onConfirm) st.onConfirm(st.match, st.outcome, st.betType, quota);
+    },
+
+    back(pid) {
+      const st = _s[pid];
+      if (st.phase === 'uo') _showPhase(pid, 'search');
+      else if (st.phase === 'confirm') {
+        _showPhase(pid, st.uoThreshold != null ? 'uo' : 'search');
+      }
+    },
+
+    clear(pid) {
+      const st = _s[pid];
+      st.match = null; st.outcome = null; st.betType = null;
+      st.uoDir = null; st.uoThreshold = null;
+      const inp = document.getElementById(`pk-inp-${pid}`);
+      if (inp) inp.value = '';
+      const res = document.getElementById(`pk-res-${pid}`);
+      if (res) res.innerHTML = '';
+      _showPhase(pid, 'search');
+      if (st.onConfirm) st.onConfirm(null, null, null, null);
+    }
+  };
+})();
+
+// ── Summary ───────────────────────────────────────────────────────────────
+function simulate(capital, mult, totalSteps, wds, stepCfgs) {
+  const wdMap = {};
   for (const w of wds) {
     const s = parseInt(w.after_step);
-    if (s && w.restart_capital != null) map[s] = w;
+    if (s && w.restart_capital != null) wdMap[s] = w;
   }
   let cap = capital;
   const rows = [];
   for (let s = 1; s <= totalSteps; s++) {
-    const bet = parseFloat((cap * (1 - 1 / mult)).toFixed(2));
-    const capAfter = parseFloat((cap * mult).toFixed(2));
-    rows.push({ step: s, capBefore: cap, bet, capAfter, wd: map[s] || null });
-    cap = map[s] ? map[s].restart_capital : capAfter;
+    const cfg = stepCfgs[s-1] || {};
+    const cb = cfg.capBefore != null ? cfg.capBefore : cap;
+    const q = cfg.quota || mult;
+    const ca = cfg.capAfter != null ? cfg.capAfter : parseFloat((cb * q).toFixed(2));
+    rows.push({step: s, capBefore: cb, capAfter: ca, wd: wdMap[s] || null, quota: q});
+    cap = wdMap[s] ? wdMap[s].restart_capital : ca;
   }
   return rows;
 }
 
 function renderSummary() {
   const name = document.getElementById('f-name').value.trim();
-  const capital = getCapital();
-  const mult = getMultiplier();
-  const steps = getSteps();
-  const rows = simulate(capital, mult, steps, S.wds);
-
-  let matchHtml = '';
-  if (S.selMatch && S.selOutcome) {
-    const lbl = { '1': S.selMatch.home_team, 'X': 'Pareggio', '2': S.selMatch.away_team }[S.selOutcome];
-    matchHtml = `<div class="row" style="margin-top:6px">⚽ ${escHtml(S.selMatch.name)} — Puntata: <b>${S.selOutcome} (${escHtml(lbl)})</b></div>`;
-  } else {
-    matchHtml = `<div class="row" style="margin-top:6px;color:var(--tg-theme-hint-color,#888)">Nessuna partita collegata</div>`;
-  }
-
-  const tableRows = rows.map(r => {
-    let html = `<tr>
-      <td>${r.step}</td>
-      <td>${fmt(r.capBefore)}</td>
-      <td>${fmt(r.bet)}</td>
-      <td>${fmt(r.capAfter)}</td>
-    </tr>`;
-    if (r.wd) {
-      html += `<tr class="wd-row-sim"><td colspan="4">
-        💰 Ritiro: preleva ${fmt(r.wd.preleva)} → riparti con ${fmt(r.wd.restart_capital)}
-      </td></tr>`;
-    }
-    return html;
+  const capital = getCapital(), mult = getMultiplier(), steps = getSteps();
+  const rows = simulate(capital, mult, steps, S.wds, S.stepCfgs);
+  const tblRows = rows.map(r => {
+    let h = `<tr><td>${r.step}</td><td>${fmt(r.capBefore)}</td><td>${fmt(r.capBefore)}</td><td>${fmt(r.capAfter)}</td></tr>`;
+    if (r.wd) h += `<tr class="wd-row-sim"><td colspan="4">💰 Ritiro: ${fmt(r.wd.preleva)} → riparti con ${fmt(r.wd.restart_capital)}</td></tr>`;
+    return h;
   }).join('');
-
   document.getElementById('summary').innerHTML = `
     <div class="summary-meta">
       <div class="title">${escHtml(name)}</div>
-      <div class="row">Capitale: <b>${fmt(capital)}</b> · Moltiplicatore: <b>×${mult}</b> · Step: <b>${steps}</b></div>
-      ${matchHtml}
+      <div class="row">Cap: <b>${fmt(capital)}</b> · Mult: <b>×${mult}</b> · Step: <b>${steps}</b></div>
     </div>
-    <div class="tbl-wrap">
-      <table class="sim">
-        <thead><tr>
-          <th>#</th><th style="text-align:right">Cap. Prima</th>
-          <th style="text-align:right">Puntata</th><th style="text-align:right">Cap. Dopo</th>
-        </tr></thead>
-        <tbody>${tableRows}</tbody>
-      </table>
-    </div>`;
+    <div class="tbl-wrap"><table class="sim">
+      <thead><tr>
+        <th>#</th>
+        <th style="text-align:right">Cap. Prima</th>
+        <th style="text-align:right">Punta tutto</th>
+        <th style="text-align:right">Cap. Dopo</th>
+      </tr></thead>
+      <tbody>${tblRows}</tbody>
+    </table></div>`;
 }
 
 // ── Submit ────────────────────────────────────────────────────────────────
@@ -809,56 +916,48 @@ async function submitScalata() {
 
   let initData = '';
   try { initData = Telegram.WebApp.initData || ''; } catch (_) {}
-
-  // group_id passed as URL param by the bot (needed when Mini App opens via DM)
   const urlParams = new URLSearchParams(window.location.search);
   const groupId = urlParams.get('group_id') ? parseInt(urlParams.get('group_id')) : null;
+  const capital = getCapital(), mult = getMultiplier(), steps = getSteps();
+
+  const stepConfigs = Array.from({length: steps}, (_, i) => {
+    const cfg = S.stepCfgs[i] || {};
+    let effectiveQuota = cfg.quota || mult;
+    if (cfg.capBefore && cfg.capAfter && cfg.capBefore > 0) {
+      effectiveQuota = parseFloat((cfg.capAfter / cfg.capBefore).toFixed(4));
+    }
+    const matchPayload = (cfg.match && cfg.outcome) ? {
+      id: cfg.match.id, name: cfg.match.name, date: cfg.match.date || null,
+      outcome_bet: cfg.outcome, bet_type: cfg.betType || null,
+    } : null;
+    return {quota: effectiveQuota, match: matchPayload, bet_type: cfg.betType || null};
+  });
 
   const payload = {
-    init_data: initData,
-    group_id: groupId,
+    init_data: initData, group_id: groupId,
     name: document.getElementById('f-name').value.trim(),
-    starting_capital: getCapital(),
-    multiplier: getMultiplier(),
-    total_steps: getSteps(),
+    starting_capital: capital, multiplier: mult,
+    total_steps: steps,
     withdrawals: S.wds
-      .filter(w => w.after_step && w.preleva !== '' && w.restart_capital != null)
-      .map(w => ({
-        after_step: parseInt(w.after_step),
-        amount: parseFloat(w.preleva),
-        restart_capital: w.restart_capital,
-      })),
-    first_match: (S.selMatch && S.selOutcome) ? {
-      id: S.selMatch.id,
-      name: S.selMatch.name,
-      date: S.selMatch.date || null,
-      outcome_bet: S.selOutcome,
-    } : null,
+      .filter(w => parseInt(w.after_step) && parseFloat(w.preleva) !== '' && w.restart_capital != null)
+      .map(w => ({after_step: parseInt(w.after_step), amount: parseFloat(w.preleva), restart_capital: w.restart_capital})),
+    mode: 'improvvisata',
+    step_configs: stepConfigs,
   };
 
   try {
     const res = await fetch('/api/v1/telegram/scalata/create', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload),
     });
     const data = await res.json();
-
-    if (!res.ok || !data.ok) {
-      throw new Error(data.detail || `Errore ${res.status}`);
-    }
-
-    // Success — close the Mini App
+    if (!res.ok || !data.ok) throw new Error(data.detail || `Errore ${res.status}`);
     try { Telegram.WebApp.close(); } catch (_) {}
-
-    // Fallback: show success in-page
     document.getElementById('pane3').innerHTML = `
       <div class="alert alert-ok" style="margin-top:8px">
         ✅ Scalata creata!
         ${data.topic_url ? `<br><a href="${data.topic_url}" style="color:inherit;font-weight:600">Apri il topic →</a>` : ''}
       </div>`;
     document.querySelector('.nav-bar').style.display = 'none';
-
   } catch (err) {
     errEl.textContent = '❌ ' + err.message;
     errEl.style.display = '';

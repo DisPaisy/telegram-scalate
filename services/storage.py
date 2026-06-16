@@ -110,6 +110,22 @@ def save_group(group_id: int, name: str) -> None:
         _write(data)
 
 
+# ── Special topics (Vincite / Perdite) ───────────────────────────────────────
+
+def get_special_topic(group_id: int, name: str) -> Optional[int]:
+    """Return the topic_id for a named special topic in a group, or None."""
+    with _lock:
+        group_topics = _read().get("special_topics", {}).get(str(group_id), {})
+        return group_topics.get(name)
+
+
+def save_special_topic(group_id: int, name: str, topic_id: int) -> None:
+    with _lock:
+        data = _read()
+        data.setdefault("special_topics", {}).setdefault(str(group_id), {})[name] = topic_id
+        _write(data)
+
+
 # ── AI config ─────────────────────────────────────────────────────────────────
 
 _AI_CONFIG_DEFAULT: dict = {
@@ -141,48 +157,86 @@ def new_id() -> str:
 
 # ── Scalata business logic ────────────────────────────────────────────────────
 
-def compute_bet(capital: float, multiplier: float) -> float:
-    """Amount to stake for the current step."""
-    return round(capital * (1 - 1 / multiplier), 2)
+def compute_bet(capital: float, multiplier: float, quota: Optional[float] = None) -> float:
+    """Always bet the full capital (all-in on every step)."""
+    return round(capital, 2)
 
 
 def build_status_text(s: dict) -> str:
-    """Format the pinned status message text."""
-    icon = "📊" if s["status"] == "active" else ("🏆" if s["status"] == "completed" else "❌")
+    """Format the pinned status message — the single source of truth for the topic."""
+    icon = {"active": "📊", "completed": "🏆", "failed": "❌"}.get(s["status"], "•")
     lines = [
-        f"{icon} <b>{s['name']}</b>",
-        "━━━━━━━━━━━━━━━",
-        f"Step: <b>{s['current_step']}/{s['total_steps']}</b>",
+        "━━━━━━━━",
+        f"{icon} <b>{s['name']}</b> — Step {s['current_step']}/{s['total_steps']}",
+        "━━━━━━━━",
         f"Capitale: <b>€{s['current_capital']:.2f}</b>",
+        "",
     ]
-    if s["status"] == "active" and s.get("pending_step"):
-        bet = compute_bet(s["current_capital"], s["multiplier"])
-        lines.append(f"Prossima puntata: <b>€{bet:.2f}</b>")
-        ps = s["pending_step"]
-        if ps.get("match") and ps["match"].get("name"):
-            match = ps["match"]
-            outcome_label = {"1": "Casa", "X": "Pareggio", "2": "Ospite"}.get(
-                match.get("outcome_bet", ""), match.get("outcome_bet", "")
-            )
-            lines.append(f"Match: {match['name']} → <b>{outcome_label}</b>")
 
-    lines.append("")
-    lines.append("<b>Storico:</b>")
+    withdrawals_by_step = {w["after_step"]: w for w in s.get("withdrawals", [])}
+    step_configs = s.get("step_configs", [])
+    _outcome_label = {"1": "Casa", "X": "Par.", "2": "Ospite"}
+
     for h in s.get("history", []):
         res_icon = "✅" if h["result"] == "win" else "❌"
         match_str = ""
         if h.get("match") and h["match"].get("name"):
-            match_str = f" — {h['match']['name']}"
-        lines.append(
-            f"{res_icon} Step {h['step']}{match_str} → €{h['capital_after']:.2f}"
-        )
+            m = h["match"]
+            lbl = _outcome_label.get(m.get("outcome_bet", ""), "")
+            match_str = f" — {m['name']} {lbl}".rstrip()
+        if h["result"] == "win":
+            cap_str = f"→ €{h['capital_after']:.2f}"
+            if h["step"] in withdrawals_by_step:
+                w = withdrawals_by_step[h["step"]]
+                cap_str += f"  💰 -€{w['amount']:.2f} → €{w['restart_capital']:.2f}"
+        else:
+            cap_str = "→ ❌"
+        lines.append(f"{res_icon} Step {h['step']}{match_str} {cap_str}")
 
-    if s.get("pending_step"):
-        ps = s["pending_step"]
+    ps = s.get("pending_step")
+    if ps and s["status"] == "active":
+        quota = ps.get("quota")
+        after_win = round(ps["capital_before"] * (quota or s["multiplier"]), 2)
+        bet_str = f"Punta tutto: <b>€{ps['capital_before']:.2f}</b> → ~€{after_win:.2f}"
         match_str = ""
         if ps.get("match") and ps["match"].get("name"):
-            match_str = f" — {ps['match']['name']}"
-        lines.append(f"⏳ Step {ps['step']}{match_str} → In attesa…")
+            m = ps["match"]
+            lbl = _outcome_label.get(m.get("outcome_bet", ""), "")
+            match_str = f" — {m['name']} {lbl}".rstrip()
+        lines.append(f"⏳ Step {ps['step']}{match_str} — {bet_str}")
+
+        # Simulate future steps assuming all wins (show only resulting capital)
+        sim_cap = ps["capital_before"]
+        for step_n in range(ps["step"] + 1, s["total_steps"] + 1):
+            prev = step_n - 1
+            idx_prev = prev - 1
+            prev_quota = step_configs[idx_prev].get("quota") if 0 <= idx_prev < len(step_configs) else None
+            eff_q = prev_quota if prev_quota else s["multiplier"]
+            sim_cap = round(sim_cap * eff_q, 2)
+            if prev in withdrawals_by_step:
+                sim_cap = withdrawals_by_step[prev]["restart_capital"]
+            idx_n = step_n - 1
+            next_quota = step_configs[idx_n].get("quota") if 0 <= idx_n < len(step_configs) else None
+            eff_qn = next_quota if next_quota else s["multiplier"]
+            sim_after = round(sim_cap * eff_qn, 2)
+            lines.append(f"◻️ Step {step_n} — ~€{sim_after:.2f}")
+
+    # Completion / failure footer
+    if s["status"] == "completed":
+        lines.append("")
+        lines.append(f"🏆 <b>Scalata completata!</b> Capitale finale: €{s['current_capital']:.2f}")
+        if s.get("delete_job_id"):
+            lines.append("<i>⚠️ Topic eliminato automaticamente tra 24 ore.</i>")
+    elif s["status"] == "failed":
+        lost = s["history"][-1]["capital_before"] if s.get("history") else s.get("starting_capital", 0.0)
+        lines.append("")
+        lines.append(f"❌ <b>Fallita allo Step {s['current_step']}.</b> Capitale persa: €{lost:.2f}")
+        if s.get("delete_job_id"):
+            lines.append("<i>⚠️ Topic eliminato automaticamente tra 24 ore.</i>")
+
+    if s.get("ai_comment"):
+        lines.append("")
+        lines.append(f"<i>🤖 {s['ai_comment']}</i>")
 
     return "\n".join(lines)
 
@@ -198,10 +252,16 @@ def create_scalata(
     withdrawals: list[dict],
     created_by_id: int,
     created_by_name: str,
-    first_match: Optional[dict] = None,
+    mode: str = "improvvisata",
+    step_configs: Optional[list[dict]] = None,
     pinned_message_id: int = 0,
 ) -> dict:
     from datetime import datetime, timezone
+
+    if not step_configs:
+        step_configs = [{"quota": multiplier, "match": None, "bet_type": None}] * total_steps
+
+    first_cfg = step_configs[0] if step_configs else {}
     scalata = {
         "id": new_id(),
         "name": name,
@@ -212,13 +272,16 @@ def create_scalata(
         "multiplier": multiplier,
         "total_steps": total_steps,
         "withdrawals": withdrawals,
+        "mode": mode,
+        "step_configs": step_configs,
         "current_step": 0,
         "current_capital": starting_capital,
         "history": [],
         "pending_step": {
             "step": 1,
             "capital_before": starting_capital,
-            "match": first_match,
+            "quota": first_cfg.get("quota"),
+            "match": first_cfg.get("match"),
         },
         "status": "active",
         "created_at": datetime.now(timezone.utc).isoformat(),
@@ -239,9 +302,12 @@ def apply_win(scalata: dict) -> tuple[dict, Optional[dict]]:
     ps = scalata["pending_step"]
     step = ps["step"]
     capital_before = ps["capital_before"]
-    new_capital = round(capital_before * scalata["multiplier"], 2)
 
-    # commit step to history
+    # Use per-step quota if set, else default multiplier
+    quota = ps.get("quota")
+    effective_quota = quota if quota else scalata["multiplier"]
+    new_capital = round(capital_before * effective_quota, 2)
+
     history_entry = {
         "step": step,
         "result": "win",
@@ -267,10 +333,14 @@ def apply_win(scalata: dict) -> tuple[dict, Optional[dict]]:
         scalata["status"] = "completed"
         scalata["pending_step"] = None
     else:
+        # copy quota and match from step_configs for next step
+        step_configs = scalata.get("step_configs", [])
+        next_cfg = step_configs[step] if len(step_configs) > step else {}
         scalata["pending_step"] = {
             "step": step + 1,
             "capital_before": new_capital,
-            "match": None,
+            "quota": next_cfg.get("quota"),
+            "match": next_cfg.get("match"),
         }
 
     save_scalata(scalata)
@@ -293,3 +363,36 @@ def apply_loss(scalata: dict) -> dict:
     scalata["pending_step"] = None
     save_scalata(scalata)
     return scalata
+
+
+def update_step_config(
+    topic_id: int,
+    step: int,
+    quota: float,
+    match: Optional[dict],
+    bet_type: Optional[str],
+) -> dict:
+    """Update step_configs for a specific step and sync pending_step if active."""
+    with _lock:
+        data = _read()
+        scalata = data["scalate"].get(str(topic_id))
+        if not scalata:
+            raise KeyError(f"Scalata {topic_id} not found")
+
+        configs = scalata.setdefault("step_configs", [])
+        # Pad list if needed
+        while len(configs) < step:
+            configs.append({"quota": scalata["multiplier"], "match": None, "bet_type": None})
+
+        configs[step - 1] = {"quota": quota, "match": match, "bet_type": bet_type}
+
+        # Sync with live pending_step
+        ps = scalata.get("pending_step")
+        if ps and ps.get("step") == step:
+            scalata["pending_step"]["quota"] = quota
+            if match:
+                scalata["pending_step"]["match"] = match
+
+        data["scalate"][str(topic_id)] = scalata
+        _write(data)
+        return scalata

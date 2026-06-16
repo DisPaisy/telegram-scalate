@@ -53,37 +53,10 @@ async def _poll_results() -> None:
         s["pending_step"]["match"]["auto_resolved"] = True
         storage.save_scalata(s)
 
-        score_str = _score_str(match)
-        msg = (
-            f"🤖 Risultato rilevato automaticamente: "
-            f"<b>{match['name']}</b> finita {score_str}.\n"
-            f"Step {ps['step']} segnato come "
-            + ("✅ <b>Vinta</b>" if won else "❌ <b>Persa</b>")
-        )
-
-        try:
-            sent = await _app.bot.send_message(
-                chat_id=s["group_id"],
-                message_thread_id=s["topic_id"],
-                text=msg,
-                parse_mode="HTML",
-            )
-        except Exception as exc:
-            log.warning("Failed to send auto-resolve message: %s", exc)
-            sent = None
-
         if won:
             await _auto_win(s, auto_resolved=True)
         else:
             await _auto_loss(s, auto_resolved=True)
-
-
-def _score_str(match: dict) -> str:
-    h = match.get("home_score")
-    a = match.get("away_score")
-    if h is not None and a is not None:
-        return f"{h}-{a}"
-    return ""
 
 
 async def _auto_win(scalata: dict, *, auto_resolved: bool) -> None:

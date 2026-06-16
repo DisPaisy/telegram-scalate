@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Modifica Scalata</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px; line-height: 1.5;
+  background: var(--tg-theme-bg-color, #fff);
+  color: var(--tg-theme-text-color, #000);
+  min-height: 100dvh; padding: 16px 16px 100px;
+}
+h2 { font-size: 17px; font-weight: 700; margin-bottom: 16px; }
+h3 {
+  font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+  color: var(--tg-theme-hint-color, #888); margin: 22px 0 10px;
+  padding-bottom: 6px; border-bottom: 1px solid var(--tg-theme-secondary-bg-color, #e0e0e0);
+}
+.form-group { margin-bottom: 11px; }
+label {
+  display: block; font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--tg-theme-hint-color, #888); margin-bottom: 4px;
+}
+input[type=text], input[type=number], select {
+  width: 100%; padding: 10px 12px; border-radius: 9px;
+  border: 1.5px solid transparent;
+  background: var(--tg-theme-secondary-bg-color, #f1f1f1);
+  color: var(--tg-theme-text-color, #000); font-size: 14px; outline: none;
+}
+input:focus, select:focus { border-color: var(--tg-theme-button-color, #2481cc); }
+input::placeholder { color: var(--tg-theme-hint-color, #aaa); }
+.row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 9px; }
+
+/* Step config cards */
+.step-card {
+  border: 1.5px solid var(--tg-theme-secondary-bg-color, #e0e0e0);
+  border-radius: 10px; padding: 11px 12px; margin-bottom: 9px;
+}
+.step-card-hd {
+  font-size: 13px; font-weight: 700; margin-bottom: 8px;
+  color: var(--tg-theme-hint-color, #888);
+}
+
+/* History entries */
+.hist-entry {
+  border: 1.5px solid var(--tg-theme-secondary-bg-color, #e0e0e0);
+  border-radius: 10px; padding: 10px 12px; margin-bottom: 8px;
+}
+.result-toggle { display: flex; gap: 8px; margin-bottom: 8px; }
+.result-toggle button {
+  flex: 1; padding: 7px; border-radius: 8px; border: 1.5px solid transparent;
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  background: var(--tg-theme-secondary-bg-color, #f1f1f1);
+  color: var(--tg-theme-hint-color, #888);
+}
+.result-toggle button.active-win {
+  background: rgba(34,197,94,.15); color: #166534;
+  border-color: #22c55e;
+}
+.result-toggle button.active-loss {
+  background: rgba(239,68,68,.12); color: #991b1b;
+  border-color: #ef4444;
+}
+
+/* Withdrawal rows */
+.wd-row {
+  display: grid; grid-template-columns: 1fr 1fr 1fr auto;
+  gap: 8px; align-items: end; margin-bottom: 9px;
+}
+.wd-row .form-group { margin-bottom: 0; }
+.rm-btn {
+  width: 36px; height: 36px; border-radius: 50%; border: none;
+  background: rgba(239,68,68,.12); color: #ef4444;
+  font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 12px 18px; border-radius: 10px; border: none;
+  font-size: 15px; font-weight: 600; cursor: pointer;
+}
+.btn-primary { background: var(--tg-theme-button-color, #2481cc); color: var(--tg-theme-button-text-color, #fff); }
+.btn-secondary { background: var(--tg-theme-secondary-bg-color, #f0f0f0); color: var(--tg-theme-text-color, #000); }
+.btn-sm { padding: 7px 12px; font-size: 12px; border-radius: 8px; }
+.btn:disabled { opacity: .5; cursor: default; }
+.nav-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; display: flex; gap: 10px;
+  padding: 11px 16px; padding-bottom: calc(11px + env(safe-area-inset-bottom, 0px));
+  background: var(--tg-theme-bg-color, #fff);
+  border-top: 1px solid var(--tg-theme-secondary-bg-color, #e0e0e0); z-index: 30;
+}
+.nav-bar .btn-primary { flex: 1; }
+.alert { padding: 11px 14px; border-radius: 10px; font-size: 13px; margin-bottom: 12px; }
+.alert-err { background: rgba(239,68,68,.12); color: #991b1b; }
+.spinner {
+  width: 18px; height: 18px; border: 2.5px solid rgba(255,255,255,.35);
+  border-top-color: #fff; border-radius: 50%; animation: spin .55s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+#loading { text-align: center; padding: 40px; color: var(--tg-theme-hint-color,#888); }
+</style>
+</head>
+<body>
+
+<div id="loading">Caricamento…</div>
+<div id="content" style="display:none">
+
+<h2 id="title">Modifica Scalata</h2>
+
+<!-- A) CONFIG BASE -->
+<h3>A · Config Base</h3>
+<div class="form-group">
+  <label>Nome</label>
+  <input type="text" id="f-name" maxlength="80">
+</div>
+<div class="row-2">
+  <div class="form-group">
+    <label>Capitale iniziale €</label>
+    <input type="number" id="f-starting" min="0.01" step="0.01">
+  </div>
+  <div class="form-group">
+    <label>Capitale attuale €</label>
+    <input type="number" id="f-capital" min="0.01" step="0.01">
+  </div>
+</div>
+<div class="row-3">
+  <div class="form-group">
+    <label>Moltiplicatore</label>
+    <input type="number" id="f-mult" min="1.01" step="0.01">
+  </div>
+  <div class="form-group">
+    <label>Step totali</label>
+    <input type="number" id="f-steps" min="1" max="100">
+  </div>
+  <div class="form-group">
+    <label>Mode</label>
+    <select id="f-mode">
+      <option value="improvvisata">Improvvisata</option>
+      <option value="programmata">Programmata</option>
+      <option value="allin">All In</option>
+    </select>
+  </div>
+</div>
+
+<!-- B) STEP CONFIGS -->
+<h3>B · Step Config</h3>
+<div id="step-configs-list"></div>
+
+<!-- C) STORICO -->
+<h3>C · Storico</h3>
+<div id="history-list"></div>
+
+<!-- D) RITIRI -->
+<h3>D · Ritiri</h3>
+<div id="wd-list"></div>
+<button class="btn btn-secondary btn-sm" onclick="addWd()" style="margin-bottom:8px">+ Aggiungi ritiro</button>
+
+<!-- E) STATUS -->
+<h3>E · Status Override</h3>
+<div class="row-2">
+  <div class="form-group">
+    <label>Status</label>
+    <select id="f-status">
+      <option value="active">Attiva</option>
+      <option value="completed">Completata</option>
+      <option value="failed">Fallita</option>
+    </select>
+  </div>
+  <div class="form-group">
+    <label>Step corrente</label>
+    <input type="number" id="f-current-step" min="0">
+  </div>
+</div>
+
+<div id="err" class="alert alert-err" style="display:none"></div>
+
+</div><!-- #content -->
+
+<div class="nav-bar">
+  <button class="btn btn-primary" id="btn-save" onclick="save()">💾 Salva tutto</button>
+</div>
+
+<script>
+const urlParams = new URLSearchParams(window.location.search);
+const topicId = parseInt(urlParams.get('topic_id') || '0');
+let scalata = null;
+let wdSeq = 0;
+let wds = [];   // [{id, after_step, amount, restart_capital}]
+
+window.addEventListener('DOMContentLoaded', async () => {
+  try { Telegram.WebApp.ready(); Telegram.WebApp.expand(); } catch (_) {}
+  if (!topicId) { showErr('topic_id mancante.'); return; }
+  await load();
+});
+
+async function load() {
+  try {
+    const res = await fetch(`/api/v1/telegram/scalata/${topicId}`);
+    if (!res.ok) throw new Error('Scalata non trovata.');
+    scalata = await res.json();
+    fill();
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('content').style.display = '';
+  } catch (e) {
+    document.getElementById('loading').textContent = '❌ ' + e.message;
+  }
+}
+
+function fill() {
+  document.getElementById('title').textContent = 'Modifica: ' + scalata.name;
+  document.getElementById('f-name').value = scalata.name || '';
+  document.getElementById('f-starting').value = scalata.starting_capital || '';
+  document.getElementById('f-capital').value = scalata.current_capital || '';
+  document.getElementById('f-mult').value = scalata.multiplier || '';
+  document.getElementById('f-steps').value = scalata.total_steps || '';
+  document.getElementById('f-mode').value = scalata.mode || 'improvvisata';
+  document.getElementById('f-status').value = scalata.status || 'active';
+  document.getElementById('f-current-step').value = scalata.current_step || 0;
+
+  renderStepConfigs();
+  renderHistory();
+  wds = (scalata.withdrawals || []).map(w => ({ id: ++wdSeq, ...w }));
+  renderWds();
+}
+
+// ── Step configs ──────────────────────────────────────────────────────────────
+function renderStepConfigs() {
+  const configs = scalata.step_configs || [];
+  const total = scalata.total_steps || configs.length;
+  const el = document.getElementById('step-configs-list');
+  el.innerHTML = Array.from({ length: total }, (_, i) => {
+    const cfg = configs[i] || { quota: scalata.multiplier, match: null };
+    const matchName = cfg.match ? escHtml(cfg.match.name || '') : '';
+    return `<div class="step-card">
+      <div class="step-card-hd">Step ${i + 1}</div>
+      <div class="row-2">
+        <div class="form-group">
+          <label>Quota</label>
+          <input type="number" min="1.01" step="0.01" value="${cfg.quota || scalata.multiplier}"
+            data-sc-quota="${i}">
+        </div>
+        <div class="form-group">
+          <label>Match</label>
+          <input type="text" placeholder="Nome partita" value="${matchName}"
+            data-sc-match="${i}">
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── History ───────────────────────────────────────────────────────────────────
+function renderHistory() {
+  const hist = scalata.history || [];
+  const el = document.getElementById('history-list');
+  if (!hist.length) {
+    el.innerHTML = '<p style="color:var(--tg-theme-hint-color,#888);font-size:13px">Nessuno storico.</p>';
+    return;
+  }
+  el.innerHTML = hist.map((h, i) => {
+    const isWin = h.result === 'win';
+    const matchName = (h.match || {}).name || '';
+    return `<div class="hist-entry">
+      <div class="result-toggle">
+        <button id="hw-${i}" class="${isWin ? 'active-win' : ''}" onclick="toggleResult(${i},'win')">✅ Vinta</button>
+        <button id="hl-${i}" class="${!isWin ? 'active-loss' : ''}" onclick="toggleResult(${i},'loss')">❌ Persa</button>
+      </div>
+      <div class="row-3">
+        <div class="form-group">
+          <label>Step</label>
+          <input type="number" min="1" value="${h.step}" data-hist-step="${i}">
+        </div>
+        <div class="form-group">
+          <label>Cap. Prima</label>
+          <input type="number" step="0.01" value="${h.capital_before}" data-hist-before="${i}">
+        </div>
+        <div class="form-group">
+          <label>Cap. Dopo</label>
+          <input type="number" step="0.01" value="${h.capital_after}" data-hist-after="${i}">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Match</label>
+        <input type="text" value="${escHtml(matchName)}" data-hist-match="${i}" placeholder="Nome partita (opzionale)">
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleResult(i, res) {
+  scalata.history[i].result = res;
+  document.getElementById(`hw-${i}`).className = res === 'win' ? 'active-win' : '';
+  document.getElementById(`hl-${i}`).className = res === 'loss' ? 'active-loss' : '';
+}
+
+// ── Withdrawals ───────────────────────────────────────────────────────────────
+function addWd() {
+  wds.push({ id: ++wdSeq, after_step: '', amount: '', restart_capital: '' });
+  renderWds();
+}
+
+function removeWd(id) {
+  wds = wds.filter(w => w.id !== id);
+  renderWds();
+}
+
+function renderWds() {
+  const el = document.getElementById('wd-list');
+  if (!wds.length) {
+    el.innerHTML = '<p style="color:var(--tg-theme-hint-color,#888);font-size:13px;margin-bottom:8px">Nessun ritiro.</p>';
+    return;
+  }
+  el.innerHTML = wds.map(w => `
+    <div class="wd-row">
+      <div class="form-group">
+        <label>Dopo step</label>
+        <input type="number" min="1" value="${w.after_step}" placeholder="N" data-wd-step="${w.id}">
+      </div>
+      <div class="form-group">
+        <label>Preleva €</label>
+        <input type="number" step="0.01" value="${w.amount}" placeholder="0.00" data-wd-amount="${w.id}">
+      </div>
+      <div class="form-group">
+        <label>Riparti €</label>
+        <input type="number" step="0.01" value="${w.restart_capital}" placeholder="0.00" data-wd-restart="${w.id}">
+      </div>
+      <button class="rm-btn" onclick="removeWd(${w.id})">×</button>
+    </div>`).join('');
+}
+
+// ── Save ──────────────────────────────────────────────────────────────────────
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function showErr(msg) {
+  const el = document.getElementById('err');
+  el.textContent = '❌ ' + msg;
+  el.style.display = '';
+  el.scrollIntoView({ behavior: 'smooth' });
+}
+
+async function save() {
+  document.getElementById('err').style.display = 'none';
+  const btn = document.getElementById('btn-save');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div>';
+
+  let initData = '';
+  try { initData = Telegram.WebApp.initData || ''; } catch (_) {}
+
+  // Collect step configs
+  const total = parseInt(document.getElementById('f-steps').value) || scalata.total_steps;
+  const stepConfigs = [];
+  for (let i = 0; i < total; i++) {
+    const quotaEl = document.querySelector(`[data-sc-quota="${i}"]`);
+    const matchEl = document.querySelector(`[data-sc-match="${i}"]`);
+    const existingCfg = (scalata.step_configs || [])[i] || {};
+    const matchName = matchEl ? matchEl.value.trim() : '';
+    const matchPayload = matchName ? {
+      id: existingCfg.match?.id || 'manual',
+      name: matchName,
+      date: existingCfg.match?.date || null,
+      outcome_bet: existingCfg.match?.outcome_bet || null,
+    } : null;
+    stepConfigs.push({
+      quota: quotaEl ? parseFloat(quotaEl.value) || null : null,
+      match: matchPayload,
+      bet_type: existingCfg.bet_type || null,
+    });
+  }
+
+  // Collect history
+  const history = (scalata.history || []).map((h, i) => ({
+    step: parseInt(document.querySelector(`[data-hist-step="${i}"]`)?.value ?? h.step),
+    result: h.result,
+    capital_before: parseFloat(document.querySelector(`[data-hist-before="${i}"]`)?.value ?? h.capital_before),
+    capital_after: parseFloat(document.querySelector(`[data-hist-after="${i}"]`)?.value ?? h.capital_after),
+    match: (() => {
+      const mn = document.querySelector(`[data-hist-match="${i}"]`)?.value.trim();
+      if (!mn) return null;
+      return { ...(h.match || {}), name: mn };
+    })(),
+  }));
+
+  // Collect withdrawals
+  const withdrawals = wds.map(w => ({
+    after_step: parseInt(document.querySelector(`[data-wd-step="${w.id}"]`)?.value || 0),
+    amount: parseFloat(document.querySelector(`[data-wd-amount="${w.id}"]`)?.value || 0),
+    restart_capital: parseFloat(document.querySelector(`[data-wd-restart="${w.id}"]`)?.value || 0),
+  })).filter(w => w.after_step > 0);
+
+  const payload = {
+    init_data: initData,
+    name: document.getElementById('f-name').value.trim() || null,
+    starting_capital: parseFloat(document.getElementById('f-starting').value) || null,
+    current_capital: parseFloat(document.getElementById('f-capital').value) || null,
+    multiplier: parseFloat(document.getElementById('f-mult').value) || null,
+    total_steps: parseInt(document.getElementById('f-steps').value) || null,
+    mode: document.getElementById('f-mode').value,
+    status: document.getElementById('f-status').value,
+    current_step: parseInt(document.getElementById('f-current-step').value) || 0,
+    step_configs: stepConfigs,
+    history,
+    withdrawals,
+  };
+
+  try {
+    const res = await fetch(`/api/v1/telegram/scalata/${topicId}/edit`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.detail || 'Errore');
+    try { Telegram.WebApp.close(); } catch (_) {}
+  } catch (e) {
+    showErr(e.message);
+    btn.disabled = false;
+    btn.textContent = '💾 Salva tutto';
+  }
+}
+</script>
+</body>
+</html>

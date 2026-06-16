@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Configura Step</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 15px; line-height: 1.45;
+  background: var(--tg-theme-bg-color, #fff);
+  color: var(--tg-theme-text-color, #000);
+  min-height: 100dvh; padding: 16px 18px 90px;
+}
+h2 { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+.sub { font-size: 13px; color: var(--tg-theme-hint-color, #888); margin-bottom: 20px; }
+.form-group { margin-bottom: 14px; }
+label {
+  display: block; font-size: 12px; font-weight: 600;
+  color: var(--tg-theme-hint-color, #888); margin-bottom: 5px;
+  text-transform: uppercase; letter-spacing: .04em;
+}
+input[type=text], input[type=number] {
+  width: 100%; padding: 11px 13px; border-radius: 10px;
+  border: 1.5px solid transparent;
+  background: var(--tg-theme-secondary-bg-color, #f1f1f1);
+  color: var(--tg-theme-text-color, #000); font-size: 15px; outline: none;
+}
+input:focus { border-color: var(--tg-theme-button-color, #2481cc); }
+input::placeholder { color: var(--tg-theme-hint-color, #aaa); }
+input.manual { border-color: var(--tg-theme-button-color, #2481cc); }
+.row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.hint-text { font-size: 12px; color: var(--tg-theme-hint-color, #888); margin-bottom: 10px; }
+
+/* Match picker */
+.day-label {
+  font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--tg-theme-hint-color,#888); padding: 8px 0 4px;
+}
+.match-card-picker {
+  border: 1.5px solid var(--tg-theme-secondary-bg-color,#e0e0e0);
+  border-radius: 10px; margin-bottom: 8px; overflow: hidden;
+}
+.match-header {
+  display: flex; align-items: center; gap: 8px; padding: 8px 12px;
+  background: var(--tg-theme-secondary-bg-color,#f5f5f5); font-size: 13px; font-weight: 600;
+}
+.live-badge {
+  font-size: 11px; font-weight: 700; background: #ef4444;
+  color: #fff; padding: 2px 6px; border-radius: 4px; flex-shrink: 0;
+}
+.match-time { font-size: 11px; color: #f59e0b; font-weight: 700; flex-shrink: 0; }
+.match-name-picker { font-size: 13px; font-weight: 600; }
+.bet-grid { display: grid; grid-template-columns: repeat(5,1fr); border-top: 1px solid var(--tg-theme-secondary-bg-color,#e0e0e0); }
+.bet-col { border-right: 1px solid var(--tg-theme-secondary-bg-color,#e0e0e0); }
+.bet-col:last-child { border-right: none; }
+.bet-col-label {
+  font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+  color: var(--tg-theme-hint-color,#888); text-align: center;
+  padding: 5px 2px 3px; border-bottom: 1px solid var(--tg-theme-secondary-bg-color,#e0e0e0);
+}
+.bet-btns { display: flex; flex-direction: column; }
+.bet-btn {
+  width: 100%; padding: 8px 2px; border: none; background: transparent;
+  color: var(--tg-theme-text-color,#000); font-size: 12px; font-weight: 600;
+  cursor: pointer; text-align: center; border-bottom: 1px solid var(--tg-theme-secondary-bg-color,#eee);
+}
+.bet-btn:last-child { border-bottom: none; }
+.bet-btn:active { background: var(--tg-theme-button-color,#2481cc); color: var(--tg-theme-button-text-color,#fff); }
+.search-msg { padding: 10px; text-align: center; font-size: 13px; color: var(--tg-theme-hint-color,#888); }
+
+/* UO selector */
+.uo-panel { padding: 12px; background: var(--tg-theme-secondary-bg-color,#f5f5f5); border-radius: 10px; margin-bottom: 10px; }
+.uo-match { font-size: 13px; font-weight: 600; margin-bottom: 10px; }
+.thresh-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; margin-bottom: 10px; }
+.thresh-btn {
+  padding: 10px; border-radius: 8px; border: 1.5px solid var(--tg-theme-secondary-bg-color,#ddd);
+  background: var(--tg-theme-bg-color,#fff); color: var(--tg-theme-text-color,#000);
+  font-size: 14px; font-weight: 700; cursor: pointer; text-align: center;
+}
+.thresh-btn.sel { border-color: var(--tg-theme-button-color,#2481cc); background: var(--tg-theme-button-color,#2481cc); color: var(--tg-theme-button-text-color,#fff); }
+.dir-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.dir-btn {
+  padding: 12px; border-radius: 8px; border: 1.5px solid var(--tg-theme-secondary-bg-color,#ddd);
+  background: var(--tg-theme-bg-color,#fff); color: var(--tg-theme-text-color,#000);
+  font-size: 14px; font-weight: 700; cursor: pointer; text-align: center;
+}
+.dir-btn.sel { border-color: var(--tg-theme-button-color,#2481cc); background: var(--tg-theme-button-color,#2481cc); color: var(--tg-theme-button-text-color,#fff); }
+
+/* Confirm panel */
+.confirm-panel { padding: 12px; background: var(--tg-theme-secondary-bg-color,#f5f5f5); border-radius: 10px; margin-bottom: 10px; }
+.confirm-match-name { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.confirm-bet-label { font-size: 13px; color: var(--tg-theme-hint-color,#888); margin-bottom: 12px; }
+.confirm-actions { display: flex; gap: 8px; margin-top: 10px; }
+
+/* Confirmed match card */
+.match-confirmed-card {
+  display: flex; align-items: center; padding: 10px 12px; border-radius: 10px;
+  background: var(--tg-theme-secondary-bg-color,#f1f1f1); margin-bottom: 8px; gap: 8px;
+}
+.match-confirmed-name { font-size: 13px; font-weight: 600; }
+.match-confirmed-bet { font-size: 12px; color: var(--tg-theme-hint-color,#888); margin-top: 2px; }
+.link-btn {
+  background: none; border: none; padding: 0; font-size: 13px;
+  color: var(--tg-theme-link-color,#2481cc); cursor: pointer; text-decoration: underline;
+}
+.alert { padding: 11px 14px; border-radius: 10px; font-size: 13px; margin-bottom: 12px; }
+.alert-err { background: rgba(239,68,68,.12); color: #991b1b; }
+.nav-bar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  display: flex; gap: 10px; padding: 11px 16px;
+  padding-bottom: calc(11px + env(safe-area-inset-bottom, 0px));
+  background: var(--tg-theme-bg-color, #fff);
+  border-top: 1px solid var(--tg-theme-secondary-bg-color, #e0e0e0); z-index: 30;
+}
+.btn {
+  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 12px 18px; border-radius: 10px; border: none;
+  font-size: 15px; font-weight: 600; cursor: pointer;
+}
+.btn-primary { background: var(--tg-theme-button-color, #2481cc); color: var(--tg-theme-button-text-color, #fff); }
+.btn-sm { padding: 7px 13px; font-size: 13px; border-radius: 8px; }
+.btn:disabled { opacity: .5; cursor: default; }
+.btn-secondary { background: var(--tg-theme-secondary-bg-color, #f0f0f0); color: var(--tg-theme-text-color,#000); }
+.spinner { width: 18px; height: 18px; border: 2.5px solid rgba(255,255,255,.35); border-top-color: #fff; border-radius: 50%; animation: spin .55s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<h2 id="title">Configura Step</h2>
+<p class="sub" id="subtitle">Imposta i valori per lo step corrente.</p>
+
+<div class="row-3" style="margin-bottom:4px">
+  <div class="form-group">
+    <label>Cap. Prima €</label>
+    <input type="number" id="f-cb" min="0.01" step="0.01" placeholder="0.00"
+           onchange="onCapBefore()">
+  </div>
+  <div class="form-group">
+    <label>Quota (×)</label>
+    <input type="number" id="f-quota" min="1.01" step="0.01" placeholder="es. 1.45"
+           onchange="onQuota()">
+  </div>
+  <div class="form-group">
+    <label>Cap. Dopo €</label>
+    <input type="number" id="f-ca" min="0.01" step="0.01" placeholder="0.00"
+           onchange="onCapAfter()">
+  </div>
+</div>
+<p class="hint-text">Cap. Dopo = Cap. Prima × Quota — modificabile manualmente.</p>
+
+<div id="picker-wrap"></div>
+
+<div id="err" class="alert alert-err" style="display:none"></div>
+
+<div class="nav-bar">
+  <button class="btn btn-primary" id="btn-confirm" onclick="doConfirm()">✅ Conferma Step</button>
+</div>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const topicId = parseInt(params.get('topic_id') || '0');
+let scalata = null;
+let manualAfter = false;
+// Confirmed picker state
+let pickedMatch = null, pickedOutcome = null, pickedBetType = null;
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function fmtTime(d) {
+  if (!d) return '';
+  try { return new Date(d).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'}); } catch(_) { return ''; }
+}
+function getDayLabel(dateStr) {
+  if (!dateStr) return 'Senza data';
+  try {
+    const dt = new Date(dateStr);
+    const today = new Date(); today.setHours(0,0,0,0);
+    const tom = new Date(today); tom.setDate(tom.getDate()+1);
+    const d = new Date(dt); d.setHours(0,0,0,0);
+    if (d.getTime() === today.getTime()) return 'Oggi';
+    if (d.getTime() === tom.getTime()) return 'Domani';
+    return dt.toLocaleDateString('it-IT',{weekday:'short',day:'2-digit',month:'2-digit'});
+  } catch(_) { return ''; }
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+  try { Telegram.WebApp.ready(); Telegram.WebApp.expand(); } catch (_) {}
+  if (!topicId) { showErr('topic_id mancante.'); return; }
+  try {
+    const res = await fetch(`/api/v1/telegram/scalata/${topicId}`);
+    if (!res.ok) throw new Error('Scalata non trovata.');
+    scalata = await res.json();
+    const ps = scalata.pending_step;
+    if (!ps) { showErr('Nessuno step in attesa.'); return; }
+
+    document.getElementById('title').textContent = `Configura Step ${ps.step}`;
+    document.getElementById('subtitle').textContent = `${scalata.name} — Step ${ps.step}/${scalata.total_steps}`;
+
+    const cfg = (scalata.step_configs || [])[ps.step - 1] || {};
+    const quota = cfg.quota || scalata.multiplier;
+    const capBefore = ps.capital_before;
+    const capAfter = parseFloat((capBefore * quota).toFixed(2));
+
+    document.getElementById('f-cb').value = capBefore.toFixed(2);
+    document.getElementById('f-quota').value = quota;
+    document.getElementById('f-ca').value = capAfter.toFixed(2);
+
+    // Init picker
+    Picker.init('main', document.getElementById('picker-wrap'), (match, outcome, betType, _quota) => {
+      pickedMatch = match; pickedOutcome = outcome; pickedBetType = betType;
+    });
+
+    // Pre-fill match if already set
+    if (ps.match?.name) {
+      pickedMatch = ps.match; pickedOutcome = ps.match.outcome_bet;
+      pickedBetType = ps.match.bet_type;
+      // Show a "already configured" display (simple approach: render done card)
+      const wrap = document.getElementById('picker-wrap');
+      wrap.innerHTML = `
+        <div class="match-confirmed-card">
+          <div>
+            <div class="match-confirmed-name">${escHtml(ps.match.name)}</div>
+            <div class="match-confirmed-bet">${escHtml(ps.match.outcome_bet || '—')}${ps.match.bet_type ? ' · ' + escHtml(ps.match.bet_type) : ''}</div>
+          </div>
+        </div>
+        <button class="link-btn" onclick="clearPick()">↩ Cambia partita</button>`;
+    }
+  } catch (e) { showErr(e.message); }
+});
+
+function clearPick() {
+  pickedMatch = null; pickedOutcome = null; pickedBetType = null;
+  Picker.init('main', document.getElementById('picker-wrap'), (match, outcome, betType) => {
+    pickedMatch = match; pickedOutcome = outcome; pickedBetType = betType;
+  });
+}
+
+function onCapBefore() {
+  if (manualAfter) return;
+  const cb = parseFloat(document.getElementById('f-cb').value) || 0;
+  const q = parseFloat(document.getElementById('f-quota').value) || 1;
+  document.getElementById('f-ca').value = (cb * q).toFixed(2);
+}
+function onQuota() {
+  if (manualAfter) return;
+  const cb = parseFloat(document.getElementById('f-cb').value) || 0;
+  const q = parseFloat(document.getElementById('f-quota').value) || 1;
+  document.getElementById('f-ca').value = (cb * q).toFixed(2);
+}
+function onCapAfter() {
+  manualAfter = true;
+  document.getElementById('f-ca').classList.add('manual');
+}
+
+function showErr(msg) {
+  const el = document.getElementById('err');
+  el.textContent = '❌ ' + msg;
+  el.style.display = '';
+}
+
+async function doConfirm() {
+  document.getElementById('err').style.display = 'none';
+  const capBefore = parseFloat(document.getElementById('f-cb').value);
+  const capAfter = parseFloat(document.getElementById('f-ca').value);
+  if (!capBefore || capBefore <= 0) { showErr('Capitale prima non valido.'); return; }
+  if (!capAfter || capAfter <= capBefore) { showErr('Capitale dopo deve essere > capitale prima.'); return; }
+
+  const effectiveQuota = parseFloat((capAfter / capBefore).toFixed(4));
+  const ps = scalata?.pending_step;
+  if (!ps) { showErr('Nessuno step attivo.'); return; }
+
+  const btn = document.getElementById('btn-confirm');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div>';
+
+  let initData = '';
+  try { initData = Telegram.WebApp.initData || ''; } catch (_) {}
+
+  const matchPayload = (pickedMatch && pickedOutcome) ? {
+    id: pickedMatch.id, name: pickedMatch.name, date: pickedMatch.date || null,
+    outcome_bet: pickedOutcome, bet_type: pickedBetType || null,
+  } : null;
+
+  try {
+    const res = await fetch(`/api/v1/telegram/scalata/${topicId}/step-config`, {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        init_data: initData, step: ps.step,
+        quota: effectiveQuota, match: matchPayload,
+        bet_type: matchPayload?.bet_type || null,
+      }),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.detail || 'Errore');
+    try { Telegram.WebApp.close(); } catch (_) {}
+  } catch (e) {
+    showErr(e.message);
+    btn.disabled = false;
+    btn.textContent = '✅ Conferma Step';
+  }
+}
+
+// ── Match Picker (same component as nuova.html) ────────────────────────────
+const Picker = (() => {
+  const _s = {};
+  const _mc = {};
+  let _mcSeq = 0;
+  const _LIVE = new Set(['LIVE','in_play','IN_PLAY','1H','2H','HT','ET','P']);
+  const _FIN  = new Set(['FT','finished','completed','FINISHED','FULL_TIME','AET','PEN']);
+  function isLive(s) { return _LIVE.has(s); }
+  function isFin(s)  { return _FIN.has(s); }
+
+  function _showPhase(id, phase) {
+    const c = _s[id]?.container; if (!c) return;
+    ['search','uo','confirm','done'].forEach(p => {
+      const el = c.querySelector(`[data-phase="${p}"]`);
+      if (el) el.style.display = p === phase ? '' : 'none';
+    });
+    _s[id].phase = phase;
+  }
+
+  function _buildMatchHtml(pid, matches) {
+    const groups = {};
+    for (const m of matches) {
+      if (isFin(m.status)) continue;
+      const day = getDayLabel(m.date);
+      groups[day] = groups[day] || [];
+      groups[day].push(m);
+    }
+    let html = '';
+    for (const [day, dayMatches] of Object.entries(groups)) {
+      if (!dayMatches.length) continue;
+      html += `<div class="day-label">${escHtml(day)}</div>`;
+      for (const m of dayMatches) {
+        const mid = `mc${_mcSeq++}`; _mc[mid] = m;
+        const live = isLive(m.status);
+        const score = (live && m.home_score != null && m.away_score != null) ? ` ${m.home_score}–${m.away_score}` : '';
+        const hdr = live ? `<span class="live-badge">LIVE${score}</span>` : `<span class="match-time">${fmtTime(m.date)}</span>`;
+        html += `<div class="match-card-picker">
+  <div class="match-header">${hdr}<span class="match-name-picker">${escHtml(m.name)}</span></div>
+  <div class="bet-grid">
+    <div class="bet-col"><div class="bet-col-label">FINALE</div><div class="bet-btns">
+      <button class="bet-btn" onclick="Picker.sel('${pid}','${mid}','1','Finale 1X2')">1</button>
+      <button class="bet-btn" onclick="Picker.sel('${pid}','${mid}','X','Finale 1X2')">X</button>
+      <button class="bet-btn" onclick="Picker.sel('${pid}','${mid}','2','Finale 1X2')">2</button>
+    </div></div>
+    <div class="bet-col"><div class="bet-col-label">DOPP.CH.</div><div class="bet-btns">
+      <button class="bet-btn" onclick="Picker.sel('${pid}','${mid}','1X','Doppia Chance')">1X</button>
+      <button class="bet-btn" onclick="Picker.sel('${pid}','${mid}','X2','Doppia Chance')">X2</button>
+      <button class="bet-btn" onclick="Picker.sel('${pid}','${mid}','12','Doppia Chance')">12</button>
+    </div></div>
+    <div class="bet-col"><div class="bet-col-label">U/O</div><div class="bet-btns">
+      <button class="bet-btn" onclick="Picker.startUO('${pid}','${mid}','Under')">UN</button>
+      <button class="bet-btn" onclick="Picker.startUO('${pid}','${mid}','Over')">OV</button>
+    </div></div>
+    <div class="bet-col"><div class="bet-col-label">GG/NG</div><div class="bet-btns">
+      <button class="bet-btn" onclick="Picker.sel('${pid}','${mid}','GG','GG/NG')">GG</button>
+      <button class="bet-btn" onclick="Picker.sel('${pid}','${mid}','NG','GG/NG')">NG</button>
+    </div></div>
+    <div class="bet-col"><div class="bet-col-label">ALTRO</div><div class="bet-btns">
+      <button class="bet-btn" onclick="Picker.startCustom('${pid}','${mid}')">+</button>
+    </div></div>
+  </div></div>`;
+      }
+    }
+    return html || '<div class="search-msg">Nessuna partita disponibile.</div>';
+  }
+
+  return {
+    init(id, container, onConfirm) {
+      _s[id] = {phase:'search', match:null, outcome:null, betType:null, uoDir:null, uoThreshold:null, onConfirm, container, timer:null};
+      container.innerHTML = `
+<div data-phase="search">
+  <div class="form-group" style="margin-bottom:8px">
+    <label>Partita <span style="font-weight:400">(opzionale)</span></label>
+    <input type="text" placeholder="es. Italia, Barcellona…" autocomplete="off"
+           oninput="Picker.search('${id}',this.value)" id="pk-inp-${id}">
+  </div>
+  <div id="pk-res-${id}"></div>
+</div>
+<div data-phase="uo" style="display:none">
+  <div class="uo-panel">
+    <div class="uo-match" id="pk-uo-m-${id}"></div>
+    <p class="hint-text">Soglia</p>
+    <div class="thresh-grid" id="pk-thresh-${id}"></div>
+    <p class="hint-text" id="pk-dir-lbl-${id}" style="display:none">Tipo</p>
+    <div class="dir-grid" id="pk-dir-${id}" style="display:none"></div>
+    <button class="link-btn" onclick="Picker.back('${id}')" style="margin-top:8px">← Torna</button>
+  </div>
+</div>
+<div data-phase="confirm" style="display:none">
+  <div class="confirm-panel">
+    <div class="confirm-match-name" id="pk-cmatch-${id}"></div>
+    <div class="confirm-bet-label" id="pk-cbet-${id}"></div>
+    <div id="pk-ccustom-${id}"></div>
+    <div class="form-group" style="margin-top:10px">
+      <label>Quota (×)</label>
+      <input type="number" id="pk-quota-${id}" min="1.01" step="0.01" placeholder="es. 1.45">
+    </div>
+    <div class="confirm-actions">
+      <button class="btn btn-secondary btn-sm" onclick="Picker.back('${id}')">← Cambia</button>
+      <button class="btn btn-primary btn-sm" onclick="Picker.confirm('${id}')">✅ Conferma</button>
+    </div>
+  </div>
+</div>
+<div data-phase="done" style="display:none">
+  <div id="pk-done-${id}"></div>
+  <button class="link-btn" onclick="Picker.clear('${id}')" style="margin-top:6px">↩ Cambia partita</button>
+</div>`;
+    },
+
+    search(id, val) {
+      clearTimeout(_s[id]?.timer);
+      const q = val.trim();
+      const el = document.getElementById(`pk-res-${id}`); if (!el) return;
+      if (q.length < 2) { el.innerHTML = ''; return; }
+      _s[id].timer = setTimeout(async () => {
+        el.innerHTML = '<div class="search-msg">🔍 Ricerca…</div>';
+        try {
+          const res = await fetch(`/api/v1/telegram/matches/search?q=${encodeURIComponent(q)}`);
+          const data = await res.json();
+          if (!data.matches?.length) { el.innerHTML = '<div class="search-msg">Nessuna partita trovata.</div>'; return; }
+          el.innerHTML = _buildMatchHtml(id, data.matches);
+        } catch(_) { el.innerHTML = '<div class="search-msg">Errore API.</div>'; }
+      }, 400);
+    },
+
+    sel(pid, mid, outcome, betType) {
+      const m = _mc[mid]; if (!m) return;
+      Object.assign(_s[pid], {match:m, outcome, betType, uoDir:null, uoThreshold:null});
+      document.getElementById(`pk-cmatch-${pid}`).textContent = m.name;
+      document.getElementById(`pk-cbet-${pid}`).textContent = `${outcome} (${betType})`;
+      document.getElementById(`pk-ccustom-${pid}`).innerHTML = '';
+      document.getElementById(`pk-quota-${pid}`).value = '';
+      _showPhase(pid, 'confirm');
+    },
+
+    startUO(pid, mid, dir) {
+      const m = _mc[mid]; if (!m) return;
+      Object.assign(_s[pid], {match:m, uoDir:dir, uoThreshold:null});
+      document.getElementById(`pk-uo-m-${pid}`).textContent = m.name;
+      document.getElementById(`pk-thresh-${pid}`).innerHTML = [1.5,2.5,3.5,4.5].map(t =>
+        `<button class="thresh-btn" onclick="Picker.selThresh('${pid}',${t})">${t}</button>`
+      ).join('');
+      document.getElementById(`pk-dir-lbl-${pid}`).style.display = 'none';
+      document.getElementById(`pk-dir-${pid}`).style.display = 'none';
+      _showPhase(pid, 'uo');
+    },
+
+    selThresh(pid, t) {
+      _s[pid].uoThreshold = t;
+      document.getElementById(`pk-thresh-${pid}`).querySelectorAll('.thresh-btn').forEach(b => {
+        b.classList.toggle('sel', parseFloat(b.textContent) === t);
+      });
+      const dirEl = document.getElementById(`pk-dir-${pid}`);
+      dirEl.innerHTML = ['Under','Over'].map(d =>
+        `<button class="dir-btn" onclick="Picker.selDir('${pid}','${d}')">${d}</button>`
+      ).join('');
+      document.getElementById(`pk-dir-lbl-${pid}`).style.display = '';
+      dirEl.style.display = '';
+    },
+
+    selDir(pid, dir) {
+      const st = _s[pid];
+      st.uoDir = dir; st.outcome = `${dir} ${st.uoThreshold}`; st.betType = st.outcome;
+      document.getElementById(`pk-cmatch-${pid}`).textContent = st.match.name;
+      document.getElementById(`pk-cbet-${pid}`).textContent = st.betType;
+      document.getElementById(`pk-ccustom-${pid}`).innerHTML = '';
+      document.getElementById(`pk-quota-${pid}`).value = '';
+      _showPhase(pid, 'confirm');
+    },
+
+    startCustom(pid, mid) {
+      const m = _mc[mid]; if (!m) return;
+      Object.assign(_s[pid], {match:m, outcome:null, betType:null});
+      document.getElementById(`pk-cmatch-${pid}`).textContent = m.name;
+      document.getElementById(`pk-cbet-${pid}`).textContent = '';
+      document.getElementById(`pk-ccustom-${pid}`).innerHTML = `
+        <div class="form-group"><label>Tipo scommessa</label>
+        <input type="text" id="pk-custom-${pid}" placeholder="es. Over 2.5…" autocomplete="off"></div>`;
+      document.getElementById(`pk-quota-${pid}`).value = '';
+      _showPhase(pid, 'confirm');
+    },
+
+    confirm(pid) {
+      const st = _s[pid];
+      const quota = parseFloat(document.getElementById(`pk-quota-${pid}`).value);
+      if (!quota || quota <= 1) { alert('Inserisci una quota valida (> 1).'); return; }
+      const customEl = document.getElementById(`pk-custom-${pid}`);
+      if (customEl && !st.outcome) { st.outcome = customEl.value.trim() || '?'; st.betType = st.outcome; }
+      document.getElementById(`pk-done-${pid}`).innerHTML = `
+        <div class="match-confirmed-card">
+          <div>
+            <div class="match-confirmed-name">${escHtml(st.match.name)}</div>
+            <div class="match-confirmed-bet">${escHtml(st.outcome||'—')} · ×${quota}</div>
+          </div>
+        </div>`;
+      _showPhase(pid, 'done');
+      if (st.onConfirm) st.onConfirm(st.match, st.outcome, st.betType, quota);
+    },
+
+    back(pid) {
+      const st = _s[pid];
+      if (st.phase === 'uo') _showPhase(pid, 'search');
+      else if (st.phase === 'confirm') _showPhase(pid, st.uoThreshold != null ? 'uo' : 'search');
+    },
+
+    clear(pid) {
+      const st = _s[pid];
+      Object.assign(st, {match:null, outcome:null, betType:null, uoDir:null, uoThreshold:null});
+      const inp = document.getElementById(`pk-inp-${pid}`);
+      if (inp) inp.value = '';
+      const res = document.getElementById(`pk-res-${pid}`);
+      if (res) res.innerHTML = '';
+      _showPhase(pid, 'search');
+      if (st.onConfirm) st.onConfirm(null, null, null, null);
+    }
+  };
+})();
+</script>
+</body>
+</html>

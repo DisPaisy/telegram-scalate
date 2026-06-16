@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from typing import Optional
 from datetime import datetime, timezone
 
+import os
+
 import aiohttp
 
 log = logging.getLogger(__name__)
@@ -76,8 +78,10 @@ class FootballAPI:
 
     async def _get(self, path: str, **params) -> Optional[dict | list]:
         try:
+            token = os.getenv("FOOTBALL_API_TOKEN", "")
+            headers = {"Authorization": f"Bearer {token}"} if token else {}
             async with aiohttp.ClientSession(timeout=TIMEOUT) as session:
-                async with session.get(f"{BASE_URL}{path}", params=params) as resp:
+                async with session.get(f"{BASE_URL}{path}", params=params, headers=headers) as resp:
                     resp.raise_for_status()
                     self.last_error = False
                     return await resp.json(content_type=None)
