@@ -1,21 +1,21 @@
-"""worldcup26.ir football API client with silent fallback."""
+"""football-data.org API client with silent fallback."""
 
 import logging
+import os
 from dataclasses import dataclass
 from typing import Optional
 from datetime import datetime, timezone
-
-import os
 
 import aiohttp
 
 log = logging.getLogger(__name__)
 
-BASE_URL = "https://worldcup26.ir/api"
+BASE_URL = os.getenv("FOOTBALL_API_URL", "https://api.football-data.org/v4")
+TOKEN = os.getenv("FOOTBALL_API_TOKEN", "")
 TIMEOUT = aiohttp.ClientTimeout(total=5)
 
-_FINISHED_STATUSES = {"FT", "finished", "completed", "FINISHED", "FULL_TIME", "AET", "PEN"}
-_LIVE_STATUSES = {"LIVE", "in_play", "IN_PLAY", "1H", "2H", "HT", "ET", "P"}
+_FINISHED_STATUSES = {"FINISHED"}
+_LIVE_STATUSES = {"LIVE", "IN_PLAY", "PAUSED", "1H", "2H", "HT", "ET", "P"}
 
 
 @dataclass
@@ -32,33 +32,18 @@ class Match:
 
 def _parse_match(raw: dict) -> Optional[Match]:
     try:
-        home = raw.get("home_team") or raw.get("homeTeam") or raw.get("home", {})
-        away = raw.get("away_team") or raw.get("awayTeam") or raw.get("away", {})
+        home_name = raw["homeTeam"]["name"]
+        away_name = raw["awayTeam"]["name"]
+        status = raw.get("status", "NS")
+        date_val = raw.get("utcDate")
 
-        # handle nested team objects {"name": "..."} or plain strings
-        home_name = home if isinstance(home, str) else home.get("name", "?")
-        away_name = away if isinstance(away, str) else away.get("name", "?")
-
-        score = raw.get("score") or {}
-        home_score = raw.get("home_score") or raw.get("homeScore")
-        away_score = raw.get("away_score") or raw.get("awayScore")
-        if home_score is None and score:
-            home_score = score.get("home") or score.get("fullTime", {}).get("home")
-        if away_score is None and score:
-            away_score = score.get("away") or score.get("fullTime", {}).get("away")
-
-        status = (
-            raw.get("status")
-            or raw.get("state")
-            or raw.get("matchStatus", "NS")
-        )
-        if isinstance(status, dict):
-            status = status.get("short", "NS")
-
-        date_val = raw.get("date") or raw.get("utcDate") or raw.get("datetime")
+        score = raw.get("score", {})
+        ft = score.get("fullTime", {})
+        home_score = ft.get("home")
+        away_score = ft.get("away")
 
         return Match(
-            id=str(raw.get("id") or raw.get("match_id") or ""),
+            id=str(raw.get("id", "")),
             name=f"{home_name} vs {away_name}",
             home_team=home_name,
             away_team=away_name,
@@ -78,28 +63,27 @@ class FootballAPI:
 
     async def _get(self, path: str, **params) -> Optional[dict | list]:
         try:
-            token = os.getenv("FOOTBALL_API_TOKEN", "")
-            headers = {"Authorization": f"Bearer {token}"} if token else {}
+            headers = {"X-Auth-Token": TOKEN} if TOKEN else {}
             async with aiohttp.ClientSession(timeout=TIMEOUT) as session:
                 async with session.get(f"{BASE_URL}{path}", params=params, headers=headers) as resp:
                     resp.raise_for_status()
                     self.last_error = False
                     return await resp.json(content_type=None)
         except Exception as exc:
-            log.warning("worldcup26.ir request failed (%s %s): %s", path, params, exc)
+            log.warning("football-data.org request failed (%s %s): %s", path, params, exc)
             self.last_error = True
             return None
 
     async def search_matches(self, query: str) -> list[Match]:
-        """Search matches by team name substring (today + upcoming)."""
-        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-        raw = await self._get("/matches", date=today)
-        if raw is None:
-            raw = await self._get("/matches")
+        """Search matches by team name substring in the World Cup."""
+        raw = await self._get(
+            "/competitions/WC/matches",
+            status="SCHEDULED,LIVE,IN_PLAY,PAUSED",
+        )
         if raw is None:
             return []
 
-        items = raw if isinstance(raw, list) else raw.get("matches", raw.get("data", []))
+        items = raw.get("matches", [])
         q = query.lower()
         results: list[Match] = []
         for item in items:
@@ -112,10 +96,8 @@ class FootballAPI:
         raw = await self._get(f"/matches/{match_id}")
         if raw is None:
             return None
-        if isinstance(raw, dict):
-            item = raw.get("match") or raw.get("data") or raw
-            return _parse_match(item)
-        return None
+        item = raw.get("match") or raw
+        return _parse_match(item)
 
     async def get_result(self, match_id: str) -> Optional[str]:
         """
